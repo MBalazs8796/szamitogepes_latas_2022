@@ -1,0 +1,1 @@
+# szamitogepes_latas_2022
