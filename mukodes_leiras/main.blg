@@ -4,47 +4,45 @@ The top-level auxiliary file: main.aux
 Reallocating 'name_of_file' (item size: 1) to 9 items.
 The style file: splncs04.bst
 Reallocating 'name_of_file' (item size: 1) to 5 items.
-I found no \citation commands---while reading file main.aux
 Database file #1: bibl.bib
-You've used 0 entries,
+You've used 1 entry,
             2850 wiz_defined-function locations,
-            594 strings with 4474 characters,
-and the built_in function-call counts, 24 in all, are:
-= -- 0
-> -- 0
-< -- 0
-+ -- 0
-- -- 0
-* -- 2
-:= -- 7
-add.period$ -- 0
-call.type$ -- 0
-change.case$ -- 0
+            602 strings with 4664 characters,
+and the built_in function-call counts, 713 in all, are:
+= -- 60
+> -- 17
+< -- 2
++ -- 7
+- -- 6
+* -- 48
+:= -- 91
+add.period$ -- 2
+call.type$ -- 1
+change.case$ -- 6
 chr.to.int$ -- 0
-cite$ -- 0
-duplicate$ -- 0
-empty$ -- 1
-format.name$ -- 0
-if$ -- 1
+cite$ -- 1
+duplicate$ -- 60
+empty$ -- 60
+format.name$ -- 7
+if$ -- 156
 int.to.chr$ -- 0
-int.to.str$ -- 0
-missing$ -- 0
-newline$ -- 6
-num.names$ -- 0
-pop$ -- 0
+int.to.str$ -- 1
+missing$ -- 11
+newline$ -- 9
+num.names$ -- 2
+pop$ -- 16
 preamble$ -- 1
-purify$ -- 0
+purify$ -- 5
 quote$ -- 0
-skip$ -- 1
+skip$ -- 24
 stack$ -- 0
-substring$ -- 0
-swap$ -- 0
-text.length$ -- 0
+substring$ -- 49
+swap$ -- 41
+text.length$ -- 2
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 0
+type$ -- 4
 warning$ -- 0
-while$ -- 0
-width$ -- 0
-write$ -- 5
-(There was 1 error message)
+while$ -- 5
+width$ -- 2
+write$ -- 17

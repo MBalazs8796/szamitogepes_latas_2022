@@ -1,12 +1,22 @@
+\section{Feladatleírás}
+
+Ide kellene írni a feladat pontos megfogalmazását, megszorításokkal együtt
+
 \section{Megoldási lehetőségek}
 
 Ide gondoltam, felírni, hogy Zita miket talált, miért lettek volna jók, és miért nem ezeket választottuk végül.
 
-\section{ORBSlam}
+\section{ORB-SLAM}
 
-\subsection{ORBSLAM bevezető}
+\subsection{ORB-SLAM bevezető}
 
-Ide lehetne felírni, hogy általánosságban miért jó az ORBSLAM.
+Az ORB-SLAM~\cite{7219438} egy monokulár SLAM rendszer, ami valós időben képes működni közel bármilyen környezetben. 
+A SLAM (Simultaneous localization and mapping) rendszerek arra használhatók, hogy létrehozzunk és frissítsünk egy 3D-s térképet egy ismeretlen környezetről, miközben folyamatosan követjük a kamera pozícióját. 
+Ebből is látható, hogy az általunk kitűzött célra tökéletes választás az ORB-SLAM.
+
+Magának a rendszernek több verziója is létezik, technikai nehézségekből adódóan mi az ORB-SLAM 2-vel dolgozunk. 
+A 2. és 3. verzió között követéspontossági eltérések vannak csak, az alapvető működésük egyforma. 
+Amennyiben a fejlesztés során problémák adódnának a pontosságból, akkor az utolsó, javítási szakaszban át tudunk térni a 3. verzióra.
 
 \subsection{ORB}
 
@@ -26,9 +36,40 @@ Ide jönne Máté része, ahol kicsit részletesebben beszélünk ezekről az al
 
 Itt visszatérnénk az ORB-ra leírom majd, hogy mi az oFast és az rBrief, ami véglegesíti, hogy miért annyira jó
 
-\subsection{ORBSLAM részletek}
+\subsection{ORB-SLAM részletek}
 
-Itt visszatérnénk az ORBSLAM-re, miután már elmagyráztuk miért annyira jó az ORB.
+Az ORB-SLAM központi algoritmusa az úgynevezett Bundle Adjustment (BA). 
+Ennek a lényege, hogy egyidőben történik a tér 3D geometriájának, a relatív mozgás paramétereinek és a kamera optikai tulajdonságainak finomítása.
+Több módszer is használta a BA-t korábban, de az ORB-SLAM ezen felül több dolgot is csinál, többek között: 
+\begin{itemize}
+	\item Ugyanazokat a jellemzőket használja az összes feladathoz
+	\item Covisibility gráf segítségével nagy környezetekben is képes valósidejű működésre
+	\item Esszenciális gráf segítségével valós időben képes lezárni a köröket
+\end{itemize}
+
+\subsubsection{Az ORB-SLAM definíciói}
+
+\textit{Térkép pont.} Minden $p_i$ térkép pont tartalmazza: az $X_{w, i}$ pozícióját a 3D-s térben, a megfigyelés $n_i$ irányát, a reprezentáns $D_i$ ORB leírót és a $d_max$ és $d_min$ távolságokat, amikből a pont megfigyelhető.
+
+\textit{Keyframe.} Minden $K_i$ keyframe tartalmazza: a $T_iw$ kamera pózt, ami egy merev test transzformáció, ami a pontot a világ koordináta rendszerből a kamera koordináta rendszerébe transzformálja, a kamera paramétereit és minden ORB jellemzőt, amit a képkockából ki lehet nyerni. 
+
+\textit{Covisibility gráf.} A Covisibility gráf egy súlyozott, irányítatlan gráf ami a keyframe-ek közötti láthatóságot reprezentálja. 
+Minden csúcs egy keyframe, és két csúcs között akkor létezik él, ha mindkét keyframe tartalmaznak közös térkép pontokat (legalább 15-öt). 
+Az él súlya pedig a közös képpontok száma ($\theta$).
+
+\textit{Esszenciális gráf.} Az esszenciális gráf a covisibility gráfból készül: a csúcsok megegyeznek, viszont sokkal kevesebb éle van. 
+Az esszenciális gráf a covisibility gráf feszítőfájából, a kört záró élekből és a covisibility gráf azon éleiből áll, ahol $\theta_{min} = 100$.
+
+\subsubsection{Működés összefoglalva}
+Az ORB-SLAM egyszerre három szálon fut: az egyiken történik a követés, a másikon a lokális mapping, a harmadikon pedig a kör bezárása.
+A követés feladata, hogy a kamerát lokalizálja minden egyes képkockán, és eldöntse, hogy mikor szükséges új keyframe beszúrása.
+A lokális mapping feldolgozza az új keyframe-eket, és lokális BA segítségével optimális módon rekonstruálja a környezetet.
+A kör bezáró szál pedig minden új keyframe beszúrásakor kört keres az esszenciális gráfban, és amennyiben talál, akkor összeolvasztja a duplikált pontokat.
+
+\subsubsection{Követés}
+
+\textit{Automatikus térkép inicializálás.} 
+
 
 \section{Mapping}
 

@@ -1,6 +1,11 @@
-\begin{thebibliography}{}
+\begin{thebibliography}{1}
 \providecommand{\url}[1]{\texttt{#1}}
 \providecommand{\urlprefix}{URL }
 \providecommand{\doi}[1]{https://doi.org/#1}
+
+\bibitem{7219438}
+Mur-Artal, R., Montiel, J.M.M., Tardós, J.D.: Orb-slam: A versatile and
+  accurate monocular slam system. IEEE Transactions on Robotics
+  \textbf{31}(5),  1147--1163 (2015). \doi{10.1109/TRO.2015.2463671}
 
 \end{thebibliography}
