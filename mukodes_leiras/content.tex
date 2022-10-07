@@ -1,6 +1,14 @@
 \section{Feladatleírás}
 
-Ide kellene írni a feladat pontos megfogalmazását, megszorításokkal együtt
+A feladatunk egy algoritmus megtervezése, elkészítése, és tervezése, amely segítségével egy valós kamera felvételbe be lehet majd szúrni egy tetszőgeles virtuális geometriát, ami hihetően reagál a kamera mozgására, és a környezetére.
+A feladat nehézsége miatt számos megszorítással, és feltétellel fogunk dolgozni, ezek a következőek:
+
+\begin{itemize}
+	\item A geometria a környezetéhez vett realtív pozíciója statikus, tahát a felvételen csak a kamera mozog
+	\item A geometria nem reagál a környező fényhatásokra, nem lesz árnyékolva, és nem is vet árnyékot
+	\item A felvétel előre fel lesz véve, az algoritmus nem feltétlenül lesz alkalmas valós idejű használatra
+	\item A geometria kezdeti pozíciója előre, manuálisan meghatározott
+\end{itemize}
 
 \section{Megoldási lehetőségek}
 
@@ -20,21 +28,53 @@ Amennyiben a fejlesztés során problémák adódnának a pontosságból, akkor 
 
 \subsection{ORB}
 
-\subsubsection{ORB bevezető}
+\subsubsection{ORB bevezető:}
 
-Ide gondoltam az ORB leírását, mit tud, miért erős stb. kb. addig, hogy miket használ.
+Az ORB-SLAM az ORB~\cite{rublee2011orb} nevű keypoint detektáló, és megfeleltető algoritmusra épül, amelyet 2011-ben hoztak létre, hogy egy hatékony alternatívát biztosítson a SIFT~\cite{lowe2004distinctive}, illetve SURF~\cite{bay2006surf} megoldásokhoz.
+A SIFT egy számításigényes, ugyanakkor magas pontosságú algoritmus, míg a SURF egy gyorsabb, viszont kevésbé megbízható opció.
+Az ORB pontossága megközelíti a SIFT-ét, míg sebessége mindkét elődjét meghaladja.
+
+Az ORB két algoritmus módosított verzióiból áll elő, ezek az oFAST, és az rBRIEF.
 
 \subsubsection{FAST}
+
+Cikk:\cite{rosten2006machine}
 
 Ide jönne Máté része, ahol kicsit részletesebben beszélünk ezekről az algoritmusokról
 
 \subsubsection{BRIEF}
 
+Cikk:\cite{rublee2011orb}
+
 -- UA mint FAST --
 
 \subsubsection{ORB részletek}
 
-Itt visszatérnénk az ORB-ra leírom majd, hogy mi az oFast és az rBrief, ami véglegesíti, hogy miért annyira jó
+A fent említett alap algoritmusokra építve jött létre az ORB.
+
+Első lépésként FAST pontokat detektál egy adott képen a FAST-9 (FAST 9-es rádiusszal) segítségével, majd ezt dolgozzák fel részletesebben az oFAST, azaz orientált FAST algoritmus segítségével.
+A FAST nem készít "saroksági értéket", azaz nem adja meg, hogy egy adott pont mennyire biztosan valódi sarokpont.
+A FAST e mellett gyakran jelez hibásan élek mentén, így szükséges a produkált pontokat a Harris sarokpont mértékük szerint sorba rendezni, majd az N "legsarokszerűbb" pontot kiválasztani közülük.
+Az oFAST algoritmus kiemelt újdonsága, hogy a pontokhoz egy sarok orientációs értéket rendel az Intensity Centroid~\cite{rosin1999measuring} módszerrel.
+Rosin egy patch momentumát a következő képpen határozza meg:
+
+$ m_{pq} = \sum_{x,y}^{}x^{q}y^{q}I(x,y) $
+
+Ezen momentumok segítségével határozzák meg a centroid pozícióját:
+
+$ C = (\frac{m_{10}}{m_{00}},\frac{m_{01}}{m_{00}}) $
+
+A centroid pozíciójának ismeretében meghatározható a vektor, illetve az arkusz tangens kvadráns biztos megfelelőjével meghatározható a patch iránya:
+
+$ \Theta = atan2(m_{01},m_{10}) $
+
+Az így meghatározott oFAST metódus rendkívül jól teljesít mesterségesen forgatott zajos adatokon is.
+
+Az ORB algoritmus másik sarokköve a szintén fent említett BRIEF algoritmus rBRIEF nevű módosított változata.
+Az eredeti BRIEF algoritmus teljesítménye sokat romlik, ha az adott képen síkbeli forgatást hajtunk végre, ezt két lépésben küszöbölték ki.
+Először is az úgynevezett steered BRIEF algoritmust hozták létre, ami az oFAST során kiszámított sarok orientációkat felhasználva javítja a módszer forgatás invarianciáját.
+Az így létrehozott featureknek azonban jelentősen csökken a varianciája, így nehezebb őket megkülönböztetni egymástól, hiszen közeli pontok featurejei hasonlóan fognak reagálni a különböző transzformációkra, így közel is maradnak egymáshoz.
+A végső rBRIEF algoritmus egy mohó keresés során kiválasztja a legnagyobb varianciájú, nem összefüggő teszteket.
 
 \subsection{ORB-SLAM részletek}
 
@@ -73,4 +113,11 @@ A kör bezáró szál pedig minden új keyframe beszúrásakor kört keres az es
 
 \section{Mapping}
 
-Itt fogom majd összeírni, hogy az ORBSLAM outputból hogyan fogunk a match movehoz jutni.
+Az ORB-SLAM miután végzett egy videó elemzésével létrehoz egy keyframeTrajectory.txt-t, amiben elmenti, hogy a kamera adott pillanatokban milyen pozícióba mozdult el a videó elején felvett pozíciójához képest.
+Ez alapján a kimenet alapján már készítettek egy Match Move algoritmust, ami képes egy 3 dimenziós geometriát egy videóban elhelyezni.\footnote{https://github.com/ChiWeiHsiao/Match-Moving}
+Mivel a kimenetben a kamera térbeli elhelyezkedése, és forgása is le van írva, így egyszerűen adódik, hogy a behelyezendő geometriát egyszerűen alávetjük a kamerán végrehajtott transzformációk inverzének, annak érdekében, hogy megkapjuk az új pozícióját.
+Az általunk talált megoldásban a behelyezett geometria hamar elcsúszik az eredeti pozíciójáról, ennek oka, hogy a különböző keyframe-k közti mozgást nehéz pontosan megbecsülni.
+Ezen felül azokat a frameket, amelyekre nem kaptak kész eredményt egyszerűen kihagyták.
+
+Több javítási javaslatunk is van, először is az ORB-SLAM képes visszatérni az összes framere számított kamera pozícióval.
+Ha ez mégsem lenne opció, akkor a keyframek közötti képek megtartásával, és egy maximum lehetséges eltolás bevezetésével korlátozzuk majd, a geometria csúszását.
