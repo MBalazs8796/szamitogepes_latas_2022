@@ -3,9 +3,30 @@
 \providecommand{\urlprefix}{URL }
 \providecommand{\doi}[1]{https://doi.org/#1}
 
+\bibitem{bay2006surf}
+Bay, H., Tuytelaars, T., Gool, L.V.: Surf: Speeded up robust features. In:
+  European conference on computer vision. pp. 404--417. Springer (2006)
+
+\bibitem{lowe2004distinctive}
+Lowe, D.G.: Distinctive image features from scale-invariant keypoints.
+  International journal of computer vision  \textbf{60}(2),  91--110 (2004)
+
 \bibitem{7219438}
 Mur-Artal, R., Montiel, J.M.M., Tardós, J.D.: Orb-slam: A versatile and
   accurate monocular slam system. IEEE Transactions on Robotics
   \textbf{31}(5),  1147--1163 (2015). \doi{10.1109/TRO.2015.2463671}
+
+\bibitem{rosin1999measuring}
+Rosin, P.L.: Measuring corner properties. Computer Vision and Image
+  Understanding  \textbf{73}(2),  291--307 (1999)
+
+\bibitem{rosten2006machine}
+Rosten, E., Drummond, T.: Machine learning for high-speed corner detection. In:
+  European conference on computer vision. pp. 430--443. Springer (2006)
+
+\bibitem{rublee2011orb}
+Rublee, E., Rabaud, V., Konolige, K., Bradski, G.: Orb: An efficient
+  alternative to sift or surf. In: 2011 International conference on computer
+  vision. pp. 2564--2571. Ieee (2011)
 
 \end{thebibliography}

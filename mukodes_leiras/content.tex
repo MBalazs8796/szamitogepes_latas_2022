@@ -89,7 +89,7 @@ Több módszer is használta a BA-t korábban, de az ORB-SLAM ezen felül több 
 
 \subsubsection{Az ORB-SLAM definíciói}
 
-\textit{Térkép pont.} Minden $p_i$ térkép pont tartalmazza: az $X_{w, i}$ pozícióját a 3D-s térben, a megfigyelés $n_i$ irányát, a reprezentáns $D_i$ ORB leírót és a $d_max$ és $d_min$ távolságokat, amikből a pont megfigyelhető.
+\textit{Térkép pont.} Minden $p_i$ térkép pont tartalmazza: az $X_{w, i}$ pozícióját a 3D-s térben, a megfigyelés $n_i$ irányát, a reprezentáns $D_i$ ORB leírót és a $d_{max}$ és $d_{min}$ távolságokat, amikből a pont megfigyelhető.
 
 \textit{Keyframe.} Minden $K_i$ keyframe tartalmazza: a $T_iw$ kamera pózt, ami egy merev test transzformáció, ami a pontot a világ koordináta rendszerből a kamera koordináta rendszerébe transzformálja, a kamera paramétereit és minden ORB jellemzőt, amit a képkockából ki lehet nyerni. 
 
@@ -108,8 +108,51 @@ A kör bezáró szál pedig minden új keyframe beszúrásakor kört keres az es
 
 \subsubsection{Követés}
 
-\textit{Automatikus térkép inicializálás.} 
+\textit{Automatikus térkép inicializálás.} A célja, hogy két képkockából meg tudja állapítani a kiindulási térkép pontokat.
+Az ORB-SLAM ezt két módon teszi meg: homográfiával síkbeli esetet feltételezve, illetve fundamentális mátrixszal.
+Ezt a két módszert párhuzamosan alkalmazza, és heurisztikával állapítja meg, hogy a két modell közül melyiket kell alkalmazni.
+Az ORB-SLAM csak akkor fejezi be az inicializációt, amikor biztos benne, hogy helyes az eredmény - érzékelni tudja azokat az eseteket, amik helytelen kiindulási térképet eredményeznének.
+Ez a következőképpen működik:
+\begin{enumerate}
+	\item Kinyeri az ORB jellemzőket az aktuális $F_c$ képkockából és $x_c \leftrightarrow x_r$ egyezéseket keres az $F_r$ referencia képkockával.
+	\item Párhuzamosan kiszámolja a $H_{cr}$ homográfiát és az $F_{cr}$ fundamentális mátrixot a DLT és a 8 pontos algoritmusokkal.
+	\item Kiszámol egy $S_M$ értéket minden $M$ modellhez (ahol $M = H$, ha homográfiáról van szó, egyébként $M = F$), több iteráción keresztül, és azt a homográfiát és fundamentális mátrixot tartja meg, aminek a legnagyobb az értéke. Ha ilyen nincs, akkor elölről kezdi az 1. lépéssel.
+	\item Ha a környezet síkbeli, akkor a homográfiát érdemes választani, egyébként a fundamentális mátrixot. Ezt úgy dönti el, hogy kiszámol egy $R_H = \frac{S_H}{S_H + R_F}$ heurisztikát, és a homográfiát választja, ha $R_H > 0.45$.
+	\item Elvégez egy teljes BA-t.
+\end{enumerate}
 
+\textit{Követés.} Maga a követés is több lépésből áll:
+\begin{enumerate}
+	\item \textit{ORB kinyerés.}  FAST sarkokat keresnek 8 skála szinten - kis felbontás esetén 1000, nagy felbontás esetén 2000 sarkot. Ehhez felosztják az egész képet egy négyzetrácsra, és minden cellából megpróbálnak 5 sarkot kinyerni, módosítva a felbontáson, ha nem sikerül. Ezekből aztán ORB leíró készül.
+	\item \textit{Helyzet közelítés előző képkockából.} Ha a követés sikeres volt az előző képkockán, akkor konstans sebességű mozgási modellel előrejelzik a kamera helyzetét a következő képkockán, felhasználva ehhez az előző térkép pontokat. Ha sikertelen, akkor bővítik a keresési teret.
+	\item \textit{Helyzet közelítés globális relokalizációval.} Ha a követés megszűnt, akkor az egész képkockát áttranszformálják egy Bag of Words-é és megpróbálják lekérdezni a lehetséges keyframe-eket egy felismerési adatbázisból, és ez alapján optimalizálják a pozíciót.
+	\item \textit{Lokális térkép követése.} A lokális térkép tartalmazza azon $K_1$ keyframe-eket, amiknek van közös térkép pontjuk az aktuális képkockával, azon $K_2$ keyframe-eket, amik a $K_1$-beli elemek szomszédai a covisibility gráfon, illetve egy $K_{ref} \in K_1$ referencia keyframe-et, aminek a legtöbb közös pontja van az aktuális képkockával. Ezek alapján optimalizálják a kamera pozíciót.
+	\item \textit{Új keyframe döntés.} Ha legalább 20 képkocka telt el a legutolsó globális relokalizáció óta, a lokális mapping jelenleg nem fut, az aktuális képkocka legalább 50 pontot követ, és ezek legfeljebb 90\%-a egyezik meg $K_{ref}$ pontjaival, akkor az aktuális képkocka bekerül a keyframe-ek közé.
+\end{enumerate}
+
+\subsubsection{Lokális mapping}
+
+A lokális mapping során minden $K_i$ keyframe a következő lépéseken megy keresztül:
+
+\begin{enumerate}
+	\item \textit{Keyframe beillesztés.} $K_i$ új csúcsként bekerül a covisibility gráfba. Ezután frissítésre kerülnek a gráf élei és a feszítőfája, majd kiszámolják $K_i$ Bag of Words reprezentációját.
+	\item \textit{Friss térkép pontok selejtezése.} Minden térkép pont 3 képkockával a létrejövése után egy teszten megy át: a követésnek meg kell találnia azon képkockák legalább 25\%-ában, amiből azt jósolta, hogy látható; illetve ha már legalább egy keyframe eltelt a létrejövése óta, akkor legalább 3 keyframe-ben megfigyelhetőnek kell lennie. Ha ezek teljesülnek, akkor a térkép pont csak akkor törlődhet, ha kevesebb, mint 3 keyframe-ből látható.
+	\item \textit{Új térkép pontok gyártása.} Az epipoláris megkötés figyelembe vételével a covisibility gráf összekötött csúcsainak ORB leíróiból háromszögeléssel jönnek létre az új térkép pontok.
+	\item \textit{Lokális BA.} A lokális BA optimalizálja az összes feldolgozott keyframe-et.
+	\item \textit{Lokális keyframe-ek selejtezése.} A BA optimális működéséhez és a sokáig tartó futáshoz szükség van a redundáns keyframe-ek törlésére. Minden olyan keyframe törlésre kerül, amik térkép pontjainak legalább 90\%-át legalább 3 másik keyframe-ből is lehet látni.
+\end{enumerate}
+
+\subsubsection{Kör bezárása}
+
+A kör bezárását végző szál veszi az utolsó feldolgozott keyframe-et ($K_i$), és lehetséges kört keres, és ha talál, akkor bezárja.
+Ehhez a következő lépéseket hajtja végre:
+
+\begin{enumerate}
+	\item \textit{Lehetséges kör detektálása.} Ehhez veszik $K_i$ Bag of Words vektorát, illetve az összes szomszédját a covisibility gráfon, ahol $\theta_{min} = 30$. Ezután kiszámolják a keyframe-ek hasonlóságát, majd veszik annak $s_{min}$ minimumát. Minden olyan keyframe-et eldobnak, aminek az értéke $s_{min}$-nél kisebb, illetve közvetlenül össze van kötve $K_i$-vel. Ezután választanak egy lehetséges kört.
+	\item \textit{Hasonlósági transzformáció kiszámítása.} Kiszámítanak egy hasonlósági transzformációt $K_i$ és egy lehetséges kör keyframe $K_l$ között. Ezzel ki tudják számolni a hibát, ami a kör létrehozásakor keletkezhetett.
+	\item \textit{Kör összeolvasztása.} Itt összeolvasztják a duplikált térkép pontokat, és új éleket illesztenek be a covisibility gráfba, amivel be tudják zárni a kört. A korábban kiszámolt hasonlósági transzformáció segítségével korrigálják a hibákat, majd minden keyframe frissíti az éleit a covisibility gráfban.
+	\item \textit{Esszenciális gráf optimalizáció.} A kör effektív lezárása érdekében szintén hasonlósági transzformációval optimalizálják az esszenciális gráfot. Ezután minden térkép pontra végrehajtják a transzformációkat.
+\end{enumerate}
 
 \section{Mapping}
 
