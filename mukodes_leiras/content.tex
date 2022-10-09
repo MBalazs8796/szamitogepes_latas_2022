@@ -12,7 +12,21 @@ A feladat nehézsége miatt számos megszorítással, és feltétellel fogunk do
 
 \section{Megoldási lehetőségek}
 
-Ide gondoltam, felírni, hogy Zita miket talált, miért lettek volna jók, és miért nem ezeket választottuk végül.
+\subsection{Kálmán-szűrés}
+A Kálmán-szűrő egy olyan rekurzió, amely a mozgó objektumok nyomon követésére egy x állapotvektor „legjobb” becslését adja, amely a cél paramétereit, például pozíciót tartalmazza. Ez egy olyan technika, amely megköveteli, hogy a tartalmazott statisztikai zaj, additív Gauss-zaj legyen, ennél a valós alkalmazásokban a zajkörnyezet bonyolultabb, így rossz becsléseket ad azokra az állapotváltozókra, amelyek nem követik a Gauss-eloszlást. Valós időben végrehajtható, előzetes információ nélkül, csak az aktuális bemeneti mérések és egy előre meghatározott bizonytalansági mátrix felhasználásával. A teljes szűrési folyamat egy predikciós és egy frissítési függvényből áll, amely a teljes rendszer ábrázolására is szolgál. Ezenkívül az állapotmodell lineáris.
+
+\subsection{SORT algoritmus}
+Kalmán-szűrővel kezeli az objektumok helyét egy videókockában és a magyar módszert használja adatkorreláció mérésére, csak akkor pontos, ha az objektum állapotbecslésének bizonytalansága alacsony, jó teljesítményt ér el akár magas képkockasebesség mellett is. A magyar algoritmus segítségével pontosan társítja a modellezett objektumokat, az objektumdetektor által gyűjtött friss adatokkal. Ezután a Kalmán-szűrő állapota az adott objektum alapján módosul, és az eljárás megismétlődik a következő képkockánál. A Deep-SORT metódus, amely integrálja az objektumok megjelenési információit, a SORT algoritmus továbbfejlesztett változata.
+
+\subsection{Kiterjesztett Kálmán-szűrő}
+Pontkövetés az egymást követő képkockákban észlelt objektumokat pontok ábrázolják, és a pontok társítása az előző állapoton alapul, amely magában foglalja a helyzetét és mozgását. Lényegében az előző keretekből időbeli tartományban alkalmazott objektumszegmentálásnak tekinthetők. Az EKF az eredeti nemlineáris szűrődinamikának az előző állapotbecslések körüli linearizálásából származik. Míg a mozgáskövetés egy tárgy mozgásának követését jelenti a kamera szemszögéből, a kamerakövetés lényege a kamera pozíciójának követése egy fizikai térben. Mindkét megközelítés a mozgást és a szerkezetet a teljes háromdimenziós térben becsüli meg a képadatokból. 
+Van néhány jelentős különbség az éles környezetben kevésbé sikeres EKF SLAM és az ORB SLAM2 között. A gyakorlatban a SLAM, a leképezés vagy a lokalizációs algoritmusok olyan folyamatot igényelnek, amely funkciókat biztosít, valamint módot a keretek között azok összeillesztésére. Az EKF SLAM, amikor mérési adatokat ad feltételezi, hogy a felismert tárgyhoz kapcsolódnak. Az ORB SLAM2 ezzel szemben elsősorban egy jellemzőazonosító és illesztési folyamat, amely minden kulcskockában felfedezi az ORB jellemzőket, és az ORB vektor alapján azonosítja az esetleges egyezéseket más kulcskockákban. Az EKF SLAM lényegében mindenkor frissíti az összes pontra vonatkozó jóslatot, még akkor is, ha messze van a kamera helyétől. Az ORB SLAM2 sokkal hatékonyabban a frissítéseket a lokálisra korlátozza, kivéve, ha konkrét mérések azt sugallják, hogy globális frissítésre van szükség. Körbejáráskor a leképezési algoritmusnak fel kell ismernie, hogy ezek a helyek megegyeznek, az EKF SLAM ezt úgy kezeli, hogy nem feltételezi, hogy az adatok ismertek, és folyamatosan frissíti az összes mutatót, az ORB SLAM2 egy egész rendszert valósít meg ennek a körülménynek a hatékony kezelésére.
+
+https://estudogeral.sib.uc.pt/bitstream/10316/98163/1/DissGuilhermeFinal.pdf
+https://www.doc.ic.ac.uk/~ajd/Publications/strasdat_phd2012.pdf
+https://www.hindawi.com/journals/wcmc/2020/2138643/
+https://www.researchgate.net/publication/220566062_Object_tracking_a_survey_ACM_Comput_Surv
+https://www.linkedin.com/pulse/what-im-learning-ekf-slam-orb-slam2-alex-thompson
 
 \section{ORB-SLAM}
 
