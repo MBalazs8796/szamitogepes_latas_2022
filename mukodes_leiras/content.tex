@@ -21,6 +21,16 @@ Kalmán-szűrővel kezeli az objektumok helyét egy videókockában és a magyar
 \subsection{Kiterjesztett Kálmán-szűrő\cite{strasdat2012local,zhang2018mobile}}
 Pontkövetés az egymást követő képkockákban észlelt objektumokat pontok ábrázolják, és a pontok társítása az előző állapoton alapul, amely magában foglalja a helyzetét és mozgását. Lényegében az előző keretekből időbeli tartományban alkalmazott objektumszegmentálásnak tekinthetők. Az EKF az eredeti nemlineáris szűrődinamikának az előző állapotbecslések körüli linearizálásából származik. Míg a mozgáskövetés egy tárgy mozgásának követését jelenti a kamera szemszögéből, a kamerakövetés lényege a kamera pozíciójának követése egy fizikai térben. Mindkét megközelítés a mozgást és a szerkezetet a teljes háromdimenziós térben becsüli meg a képadatokból. 
 Van néhány jelentős különbség az éles környezetben kevésbé sikeres EKF SLAM és az ORB SLAM2 között.\footnote{https://www.linkedin.com/pulse/what-im-learning-ekf-slam-orb-slam2-alex-thompson} A gyakorlatban a SLAM, a leképezés vagy a lokalizációs algoritmusok olyan folyamatot igényelnek, amely funkciókat biztosít, valamint módot a keretek között azok összeillesztésére. Az EKF SLAM, amikor mérési adatokat ad feltételezi, hogy a felismert tárgyhoz kapcsolódnak. Az ORB SLAM2 ezzel szemben elsősorban egy jellemzőazonosító és illesztési folyamat, amely minden kulcskockában felfedezi az ORB jellemzőket, és az ORB vektor alapján azonosítja az esetleges egyezéseket más kulcskockákban. Az EKF SLAM lényegében mindenkor frissíti az összes pontra vonatkozó jóslatot, még akkor is, ha messze van a kamera helyétől. Az ORB SLAM2 sokkal hatékonyabban a frissítéseket a lokálisra korlátozza, kivéve, ha konkrét mérések azt sugallják, hogy globális frissítésre van szükség. Körbejáráskor a leképezési algoritmusnak fel kell ismernie, hogy ezek a helyek megegyeznek, az EKF SLAM ezt úgy kezeli, hogy nem feltételezi, hogy az adatok ismertek, és folyamatosan frissíti az összes mutatót, az ORB SLAM2 egy egész rendszert valósít meg ennek a körülménynek a hatékony kezelésére.
+\begin{figure*}
+	\centering
+	\captionsetup{justification=centering}
+	\includegraphics[width=1.7\columnwidth]{figs/fast_corner_detector.jpg}
+	\vspace{-10pt}
+	\caption{A FAST algoritmus egy lépése}
+	\vspace{-10pt}
+	\label{fig:FAST}
+\end{figure*}
+
 
 \section{ORB-SLAM}
 
@@ -46,37 +56,46 @@ Az ORB két algoritmus módosított verzióiból áll elő, ezek az oFAST, és a
 
 \subsubsection{FAST}
 
-Cikk:\cite{rosten2006machine}
 
-A FAST detektor lényege, hogy egy 16 pontból álló kört vizsgál minden pixel körül. Ezen 16 pixelből ha N pixel világosabb, mint a kör közepén lévő pixel + egy küszöbérték, vagy pedig sötétebb, mint a kör közepén lévő pixel - egy küszöbérték, akkor a centrális pixel sarokpontnak tekinthető.
+A FAST~\cite{rosten2006machine} detektor lényege, hogy egy 16 pontból álló kört vizsgál minden pixel körül.
+Ezen 16 pixelből, ha N pixel világosabb, mint a kör közepén lévő pixel + egy küszöbérték, vagy pedig sötétebb, mint a kör közepén lévő pixel - egy küszöbérték, akkor a centrális pixel sarokpontnak tekinthető, ezt az \ref{fig:FAST}. ábra szemlélteti is.
 
-A nem sarokpontok elutasítára használt high-speed test 4 pont vizsgálatával működik (1., 5., 9. és 13. pont).
-Először az 1. és 9. pontról eldönti, hogy túl világos vagy túl sötét.
-Ha igen, akkor ugyanezt a vizsgálatot az 5. és 13. pontra is elvégzi.
-Ha a centrális pont sarokpont, akkor a 4 pont közül legalább 3-ra teljesülni kell, hogy a pixel világosabb, mint a kör közepén lévő pixel + a választott küszöbérték, vagy pedig sötétebb, mint a kör közepén lévő pixel - a választott küszöbérték.
-Amennyiben az előbbi feltétel teljesül, akkor kerülhet sor a kör összes pontjának kiértékelésére.
+Az algoritmus gyorsítható, hogyha a teljes környezet vizsgálata előtt néhány egyszerű teszt segítségével kiszűrjük az egyértelműen elvethető pontokat.
+Első tesztként a 4 "fő-égtáj" (Észak, Kelet ...) menti pixelt vizsgálják, ami a mellékelt ábrán az 1, 5, 9 és 13 szám jelöl, ha ezek közül legalább 3 nem teljesíti a fenti feltételt, a pont elvethető.
+Hasonló módon második tesztként a "mellék-égtájok" (Északkelet, Délkelete ...) menti pontok vizsgálandóak, azonos feltételek mellett.
+Amennyiben a két előszűrési feltétel egyszerre teljesül, a kérdéses pont lehetséges sarokpont, és értelmes a teljes környezetét megvizsgálni.
 
-A high-speed test az alábbi problémákkal rendelkezik:
+Az algoritmus az alábbi problémákkal rendelkezik:
 
 \begin{itemize}
 	\item Nem általánosít jól N < 12 esetén.
 	\item A teszthez használt pixelek és azok sorrendje implicit feltételezéseket tartalmaz a jellemzők megjelenésének eloszlásáról.
 	\item Egyes megvalósítások esetén a 4 pont vizsgálata újra megtörténik a kör összes pontjának kiértékelésére során.
 	\item Több egymás melletti sarokpont is észlelésre kerül.
+	\item Számítőgép által generált, vagy nagyon tiszta élekkel rendelkező képeken nem működik jól
 \end{itemize}
 
-Az első 3 probléma egy gépi tanulást használó eljárással, ami a FAST algoritmust futtatja a tanításhoz használt képeket és megkeresi a sarokpont megállapításhoz legalkalmasabb pontokat.
-A 4. problémára egy Non-maximal suppression eljárás van, ami minden lehetséges sarokponthoz rendel egy érték és az egymáshoz közel álló sarokpontok közül csak a kisebb értékkel rendelkezőket eltávolítja.
+Az első 3 probléma hatási egy döntési fákra alapuló gépi tanulási eljárással csökkenthető.
+Az eljárás során FAST algoritmust futtaták a tanításhoz használt képeken és megkeresik a sarokpont megállapítására legalkalmasabb pontokat.
+A 4. problémára egy Non-maximal suppression eljárás van, ami minden lehetséges sarokponthoz rendel egy értéket, ami az abszolút különbség p és az őt körülvevő 16 pixel értéke között, majd az egymáshoz közel álló sarokpontok közül a kisebb értékkel rendelkezőket eltávolítja.
+Az utolsó probléma egy Gauss filter alkalmazásával oldahtó meg, ami egyhény elmossa a túl éles sarokpontokat.
 
 \subsubsection{BRIEF}
 
-Cikk:\cite{rublee2011orb}
+A BRIEF~\cite{calonder2010brief} egy jellemző leíró (feature descriptor), arra használható, hogy előre detektált kulcspontokhoz leíró adatokat rendelhessünk, például azok megkülönböztetése céljából.
+A BRIEF az adott pontok/pixelek környezetéből készít bináris leírásokat, a következő képletek mentén:
 
-A BRIEF egy jellemző leíró (feature descriptor).
-A BRIEF egyszerű bináris teszteket végez a pixelek közt az élsimított kép adott területén (aminek mérete lehet például 31x31).
-A jellemző egy bináris vektorként definiálható, ami a pixelek közt végzett bináris teszt eredményét tárolja.
-A hatékonysága hasonlít a SIFT algoritmushoz fényérzékenység, homályosság és perspektív torzulás kezelése szempontjából.
-Síkbeli forgatás viszont nagyon érzékeny.
+$ f_{n_{d}}(p) := \sum_{1\leq i\leq n_{d}}^{}2^{i-1}\tau (p;x_{i},y_{i}) $
+
+$ \tau (p;x,y)=\begin{Bmatrix}
+	1 : p(x) < p(y) \\ 
+	0 : p(x) \geq p(y)
+\end{Bmatrix} $
+
+Itt $ n_{d} $ a d. pont környezete, x és y egy pontpár p(x), illetve p(y) pedig a p környezet intenzitása az adott pontokon.
+A két jellemző pont különböző véletlenszerű stratégiák mentén választható.
+
+A BRIEF rendkívül gyors, és jól felismerhető leírásokat generál, gyengéje azonban, hogy nagyon érzékeny síkbeli forgatásokra.
 
 \subsubsection{ORB részletek}
 
@@ -188,7 +207,7 @@ Ehhez a következő lépéseket hajtja végre:
 
 Az ORB-SLAM miután végzett egy videó elemzésével létrehoz egy keyframeTrajectory.txt-t, amiben elmenti, hogy a kamera adott pillanatokban milyen pozícióba mozdult el a videó elején felvett pozíciójához képest.
 Ez alapján a kimenet alapján már készítettek egy Match Move algoritmust, ami képes egy 3 dimenziós geometriát egy videóban elhelyezni.\footnote{https://github.com/ChiWeiHsiao/Match-Moving}
-Mivel a kimenetben a kamera térbeli elhelyezkedése, és forgása is le van írva, így egyszerűen adódik, hogy a behelyezendő geometriát egyszerűen alávetjük a kamerán végrehajtott transzformációk inverzének, annak érdekében, hogy megkapjuk az új pozícióját.
+Mivel a kimenetben a kamera térbeli elhelyezkedése, és forgása is le van írva, így egyszerűen adódik, hogy a behelyezendő geometriát alávetjük a kamerán végrehajtott transzformációk inverzének, annak érdekében, hogy megkapjuk az új pozícióját.
 Az általunk talált megoldásban a behelyezett geometria hamar elcsúszik az eredeti pozíciójáról, ennek oka, hogy a különböző keyframe-k közti mozgást nehéz pontosan megbecsülni.
 Ezen felül azokat a frameket, amelyekre nem kaptak kész eredményt egyszerűen kihagyták.
 
