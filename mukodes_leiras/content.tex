@@ -48,13 +48,35 @@ Az ORB két algoritmus módosított verzióiból áll elő, ezek az oFAST, és a
 
 Cikk:\cite{rosten2006machine}
 
-Ide jönne Máté része, ahol kicsit részletesebben beszélünk ezekről az algoritmusokról
+A FAST detektor lényege, hogy egy 16 pontból álló kört vizsgál minden pixel körül. Ezen 16 pixelből ha N pixel világosabb, mint a kör közepén lévő pixel + egy küszöbérték, vagy pedig sötétebb, mint a kör közepén lévő pixel - egy küszöbérték, akkor a centrális pixel sarokpontnak tekinthető.
+
+A nem sarokpontok elutasítára használt high-speed test 4 pont vizsgálatával működik (1., 5., 9. és 13. pont).
+Először az 1. és 9. pontról eldönti, hogy túl világos vagy túl sötét.
+Ha igen, akkor ugyanezt a vizsgálatot az 5. és 13. pontra is elvégzi.
+Ha a centrális pont sarokpont, akkor a 4 pont közül legalább 3-ra teljesülni kell, hogy a pixel világosabb, mint a kör közepén lévő pixel + a választott küszöbérték, vagy pedig sötétebb, mint a kör közepén lévő pixel - a választott küszöbérték.
+Amennyiben az előbbi feltétel teljesül, akkor kerülhet sor a kör összes pontjának kiértékelésére.
+
+A high-speed test az alábbi problémákkal rendelkezik:
+
+\begin{itemize}
+	\item Nem általánosít jól N < 12 esetén.
+	\item A teszthez használt pixelek és azok sorrendje implicit feltételezéseket tartalmaz a jellemzők megjelenésének eloszlásáról.
+	\item Egyes megvalósítások esetén a 4 pont vizsgálata újra megtörténik a kör összes pontjának kiértékelésére során.
+	\item Több egymás melletti sarokpont is észlelésre kerül.
+\end{itemize}
+
+Az első 3 probléma egy gépi tanulást használó eljárással, ami a FAST algoritmust futtatja a tanításhoz használt képeket és megkeresi a sarokpont megállapításhoz legalkalmasabb pontokat.
+A 4. problémára egy Non-maximal suppression eljárás van, ami minden lehetséges sarokponthoz rendel egy érték és az egymáshoz közel álló sarokpontok közül csak a kisebb értékkel rendelkezőket eltávolítja.
 
 \subsubsection{BRIEF}
 
 Cikk:\cite{rublee2011orb}
 
--- UA mint FAST --
+A BRIEF egy jellemző leíró (feature descriptor).
+A BRIEF egyszerű bináris teszteket végez a pixelek közt az élsimított kép adott területén (aminek mérete lehet például 31x31).
+A jellemző egy bináris vektorként definiálható, ami a pixelek közt végzett bináris teszt eredményét tárolja.
+A hatékonysága hasonlít a SIFT algoritmushoz fényérzékenység, homályosság és perspektív torzulás kezelése szempontjából.
+Síkbeli forgatás viszont nagyon érzékeny.
 
 \subsubsection{ORB részletek}
 
