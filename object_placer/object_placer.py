@@ -1,4 +1,3 @@
-from cmath import pi
 import numpy as np
 import math
 import cv2
@@ -150,6 +149,7 @@ def save():
 if __name__ == '__main__':
 
     scene_name = 'test_scene'
+
 
     obj = OBJ('lego.obj', swapyz=True)
     og_img = getFirstFrame('./vids/IMG_E3961.mp4')
