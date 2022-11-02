@@ -52,7 +52,8 @@ def save_data(video, video_name):
 def run_orb_slam(video_name, config):
     print('Running ORB_SLAM')
     video_folder = f'./extracted/{video_name}'
-    subprocess.run(f'{ORB_SLAM_HOME}/{TUM_DRIVER} {VOCABULARY} {config} {video_folder}/')
+    print(f'{ORB_SLAM_HOME}/{TUM_DRIVER} {ORB_SLAM_HOME}/{VOCABULARY} {config} {video_folder}/')
+    subprocess.run(f'{ORB_SLAM_HOME}/{TUM_DRIVER} {ORB_SLAM_HOME}/{VOCABULARY} {config} {video_folder}/', shell=True)
     shutil.move('./KeyFrameTrajectory.txt', f'{video_folder}/KeyFrameTrajectory.txt')
 
 
