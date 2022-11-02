@@ -18,12 +18,15 @@ def extract_frames(video):
 
     capture = cv2.VideoCapture(video)
 
+    i = 1
+
     while capture.isOpened():
         ret, frame = capture.read()
         if not ret:
             break
 
-        extracted.append((frame, time.time()))
+        extracted.append((frame, i))
+        i += 0.1
 
     return extracted
 

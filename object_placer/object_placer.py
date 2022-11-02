@@ -152,7 +152,7 @@ if __name__ == '__main__':
 
 
     obj = OBJ('lego.obj', swapyz=True)
-    og_img = getFirstFrame('./vids/20221102_091459.mp4')
+    og_img = getFirstFrame('./vids/20221102_162217.mp4')
     
     rows, cols = og_img.shape[:2]
     h = 1000

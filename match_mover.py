@@ -213,7 +213,7 @@ def render(img, obj, projection, h, w, color=False, scale=1):
 
 if __name__ == '__main__':
 
-    scene_name = '20221102_162217'
+    scene_name = '20221102_091459'
 
     with open(f'{scene_name}.json', 'r') as fp:
       sm = json.load(fp)
