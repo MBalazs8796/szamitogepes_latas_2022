@@ -263,7 +263,23 @@ if __name__ == '__main__':
               
     bg_filenames = np.array(bg_filenames)
     bg_filenames = bg_filenames[has_pose]
-        
+    
+    # frame_width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
+    # frame_height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    # fps = int(video.get(cv2.CAP_PROP_FPS))
+    
+    # print(frame_width)
+    # print(frame_height)
+    
+    # writer = cv2.VideoWriter(f'{scene_name}_match_move.avi', cv2.VideoWriter_fourcc(*'XVID'), 49, (frame_width, frame_height))
+    # while video.isOpened():
+    #   s,f = video.read()
+    #   writer.write(f)
+    #   if not s:
+    #     break
+    # writer.release()
+    # exit(69)
+    
     assert(len(poses) == len(bg_filenames))
 
     n_frames = len(poses)
@@ -273,7 +289,8 @@ if __name__ == '__main__':
 
     # Camera Intrinsics
     if scene_name == '20221102_091459' or scene_name == '20221102_162217':
-      im_w, im_h = 1920, 1080
+      im_w, im_h = 1280, 720
+      fps = 5
       K =  np.array([ [870.25319293,  0, 637.28771858],
                       [0, 866.48681104, 354.55971258],
                       [0,       0,   1]])
@@ -316,9 +333,12 @@ if __name__ == '__main__':
       img = render(img, obj, P, h=1, w=1, color=False, scale=10)
       # img = render(img, obj, Rt_model, h=0, w=0, color=False)
 
-      cv2.imshow(scene_name, img)
-      if cv2.waitKey() == ord('q'):
-        break
-      result_imgs.append(img[..., ::-1])
-
+      #cv2.imshow(scene_name, img)
+      #if cv2.waitKey() == ord('q'):
+      #  break
+      result_imgs.append(img)
+    writer = cv2.VideoWriter(f'{scene_name}_match_move.avi', cv2.VideoWriter_fourcc(*'XVID'), fps, (im_w, im_h))
+    for i in result_imgs:
+      writer.write(i)
+    writer.release()
     cv2.destroyAllWindows()
