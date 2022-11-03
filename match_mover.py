@@ -180,7 +180,16 @@ def render(img, obj, projection, h, w, color=False, scale=1):
 
     img = deepcopy(img)
 
-    for face in obj.faces:
+    if not hasattr(render, 'points'):
+      with open(f'{scene_name}.json', 'r') as fp:
+        sm = json.load(fp)
+
+      R = degree2R(sm['roll'], sm['pitch'], sm['yaw'])
+      R = np.hstack([R, [[sm['h']],[sm['w']],[sm['scale']]]])
+      R = np.vstack([R, [0,0,0,1]])
+      
+      point_list = list()
+      for face in obj.faces:
         face_vertices = face[0]
         points = np.array([vertices[vertex - 1] for vertex in face_vertices])
 
@@ -190,8 +199,19 @@ def render(img, obj, projection, h, w, color=False, scale=1):
         # model points must be displaced
         points = np.array([[p[0] + w / 2, p[1] + h / 2, p[2]] for p in points])
 
-        dst = cv2.perspectiveTransform(points.reshape(-1, 1, 3), projection)
+        #point_list.append(cv2.perspectiveTransform(points.reshape(-1, 1, 3), R))
+        point_list.append(points.reshape(-1, 1, 3))
+      setattr(render, 'point_list', point_list)
 
+
+    for points in render.point_list:
+
+        #print(points)
+        #print(projection)
+
+        dst = cv2.perspectiveTransform(points.reshape(-1, 1, 3), projection)
+        #print(dst)
+        #exit(69)
         imgpts = np.int32(dst)
         # r = list()
         # for f in imgpts:
@@ -218,9 +238,9 @@ if __name__ == '__main__':
     with open(f'{scene_name}.json', 'r') as fp:
       sm = json.load(fp)
 
-    # R = degree2R(sm['roll'], sm['pitch'], sm['yaw'])
-    # R = np.hstack([R, [[sm['h']],[sm['w']],[sm['scale']]]])
-    # R = np.vstack([R, [0,0,0,1]])
+    R = degree2R(-1*sm['roll'], -1*sm['pitch'], -1*sm['yaw'])
+    R = np.hstack([R, [[-1*sm['h']],[-1*sm['w']],[sm['scale']]]])
+    R = np.vstack([R, [0,0,0,1]])
 
     # read file
     bg_filenames = glob.glob(f'./orbslam_driver/extracted/{scene_name}/rgb/*.png')
@@ -243,10 +263,7 @@ if __name__ == '__main__':
               
     bg_filenames = np.array(bg_filenames)
     bg_filenames = bg_filenames[has_pose]
-    
-    print(len(poses))
-    print(len(bg_filenames))
-    
+        
     assert(len(poses) == len(bg_filenames))
 
     n_frames = len(poses)
@@ -274,30 +291,34 @@ if __name__ == '__main__':
       img = cv2.imread(bg_filenames[i])
 
 
-      t_model = [[sm['h']/10],[sm['w']/10],[-500]]
-      #R_model = degree2R(sm['roll'], sm['pitch'], sm['yaw'])
+      t_model = [[sm['h']/-5],[sm['w']/10],[-500]]
+      R_model = degree2R(sm['roll'], sm['pitch']/2, sm['yaw']/2)
+      #R_model = degree2R(roll=0, pitch=0, yaw=0)
       #t_model = np.array([[0, 0, -500]]).T  # 14000
-      R_model = degree2R(roll=-1*sm['roll'], pitch=-1*sm['pitch'], yaw=-1*sm['yaw'])
       Rt_model = np.hstack([R_model, t_model]) 
       Rt_model = np.vstack([Rt_model, [0,0,0,1]])
 
+      #Rt_model = Rt_model @ R
+
       # Camera Pose
       Rt_cam = poses[i]
-      # Rt_cam = np.linalg.inv(Rt_cam)
+      #Rt_cam = np.linalg.inv(Rt_cam)
 
       Rt = Rt_cam @ Rt_model
 
       Rt = approx_rotation(Rt[:-1, :])
       #print('Rt', Rt, end='\n\n')
       P = K @ Rt
+      #P = Rt
       #print('P', P, end='\n\n')
       P = P[:-1, :]  # [4,4] -> [3,4]
 
-      img = render(img, obj, P, h=0, w=0, color=False, scale=10)
+      img = render(img, obj, P, h=1, w=1, color=False, scale=10)
       # img = render(img, obj, Rt_model, h=0, w=0, color=False)
 
-      cv2.imshow('ImageWindow', img)
-      cv2.waitKey()
+      cv2.imshow(scene_name, img)
+      if cv2.waitKey() == ord('q'):
+        break
       result_imgs.append(img[..., ::-1])
 
     cv2.destroyAllWindows()
