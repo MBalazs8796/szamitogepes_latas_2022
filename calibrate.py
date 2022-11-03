@@ -12,7 +12,7 @@ objpoints = [] # 3d point in real world space
 imgpoints = [] # 2d points in image plane.
 images = glob.glob('chessboard/*.jpg')
 images.sort()
-images = images[::5]
+#images = images[::5]
 print(images)
 for fname in tqdm(images):
     img = cv2.imread(fname)
