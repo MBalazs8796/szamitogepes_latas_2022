@@ -34,7 +34,31 @@ Egyelőre mi is elvetjük a nem keyframe szakaszait a vizsgált videónak, ugyan
 
 \section{Tesztek}
 
+A tesztek tervezése során elsődleges szempont volt, hogy a lehető legszélesebb spektrumot fedjünk le.
+A kamera mozgási sebessége, iránya, a környezet megvilágítása, a jelenetben található tárgyak színei, formái, a geometria relatív pozíciója a kamerához, és számos további potenciálisan jelentős faktort próbálunk figyelembe venni, és lefedni.
+Természetesen a tesztjeink közel sem képesek a teljes probléma teret lefedni, azonban megpróbáltuk azonosítani azokat az eseteket, amik a lehető legnagyobb teret fedik le.
+
+A tesztek során elsődleges célunk az algoritmus limitjeinek meghatározása volt, nem csupán az, hogy példákat gyűjtsünk helyes, és helytelen működésre.
+A megfelelő működést pontosan úgy definiáljuk, hogy a geometria egy vizuális hibahatáron belül helyezkedik el, azaz nem feltétlenül szükséges, hogy a geometria tökéletesen stabilan a megfelelő pozícóban maradjon, ez a különböző kerekítési hibák, és szükséges közelítések miatt szinte lehetetlen.
+Az helyes működés így könnyebben elérhető, ezáltal a határok viszont tágabbak, ami nehezebbé teszi a meghatározásukat.
+
+Az elsősorban figyelembe vett paraméterek, a kamera mozgásának komplexitása, a környezet komplexitása, és a megvilágítás volt.
+
+A kamera mozgásának komplexitását 2 fő faktor mentén határozhatjuk meg.
+Az első, hogy a kezdeti pozícióból egy tetszőleges időpillanatban mennyire komplikált transzformáció során vihetnénk át.
+Tehát, ha például a videó során csak eltolások történnek, különösen, ha ezek egyetlen tengelyt követnek, az kevésbé komplikált, mintha a kamera forogna 1, vagy több tengely mentén.
+
+A második, hogy a kamera által felvett pozíció mennyire eltérő transzformáció során jöhetett létre 2 tetszőleges időpillanat között.
+Ebben az esetben ha a kamera több tengely mentén forog/mozog, de egy irányba teszi azt konzisztensen, akkor azt állítjuk, hogy kevésbé komplex a mozgása, mintha például egy egyszerűbb utat járna be, de időközönként egy új véletlen irányba kezdene forogni.
+
+A környezet komplexitása szintén potenciálisan több faktortól függ, a jelenlévő tárgyak számától, azok sarokpontjainak beazonosíthatóságától, és így tovább.
+Természetes közegekben ezt a komplexitást nehéz korlátozni, hiszen nehéz inkrementálisan csökkenteni egy fa asztal mintájának összetettségét, vagy egy pohár sarkainak kerekítettségének mértékét befolyásolni, így ezt a faktort kevéssé vizsgáltuk.
+
+Fontos kiemelni, hogy egy feladat, ami komplexebb részekkel rendelkezik nem feltétlenül lesz nehezebb, mint egy olyan, ami egyszerűbb, hiszen például minimális környezeti komplexitás esetén az ORB-SLAM nem fog tudni kellő mennyiségű pontmegfeleltetést elvégezni ahhoz, hogy megfelelően tudja követni a kamerát.
+
 \section{Metrikák}
+
+
 
 \section{Eredmények}
 
