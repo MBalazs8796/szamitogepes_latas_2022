@@ -24,8 +24,8 @@ def extract_frames(video):
         if not ret:
             break
 
-        extracted.append((frame, round(i, 1)))
-        i += 0.1
+        extracted.append((frame, round(i, 2)))
+        i += 0.05
 
     return extracted
 

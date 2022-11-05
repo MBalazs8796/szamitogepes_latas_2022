@@ -91,7 +91,7 @@ def read_kerframe_trajectory(trajectory_fn, timestamp_fn):
         Rt = np.hstack([R, t])
         Rt = np.vstack([Rt, [0,0,0,1]])
         Rt_list.append(Rt)
-        timestamp_list.append(timestamp)
+        timestamp_list.append(round(float(timestamp, 2)))
 
 
     has_pose = list()
@@ -100,7 +100,7 @@ def read_kerframe_trajectory(trajectory_fn, timestamp_fn):
       if line.strip() and line[0] != '#':
         tstamp, imgpth = line.split(' ')
         names.append(imgpth.split('/')[-1].strip())
-        if close_to_any(float(tstamp), timestamp_list, rtol=1e-15):
+        if round(float(tstamp, 2)) in timestamp_list:
           has_pose.append(True)
         else:
           has_pose.append(False)
