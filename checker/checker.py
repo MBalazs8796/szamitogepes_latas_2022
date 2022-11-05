@@ -35,7 +35,7 @@ def binary_check(video):
 
 def get_camera_matrix(config):
     elements = dict()
-    with open(config, 'r') as f:
+    with open(f'../orbslam_driver/{config}.yaml', 'r') as f:
         for line in f.readlines():
             if line.startswith('Camera.fx:'):
                 elements['fx'] = float(line.strip().split(' ')[-1])
@@ -108,7 +108,7 @@ if __name__ == '__main__':
     group.add_argument('-b', '--binary', action='store_true', help='Run binary testing on the videos')
     group.add_argument('-v', '--video', metavar=None, help='Run a placement test on a specific video')
 
-    parser.add_argument('-c', '--config', metavar=None, help='The config with the appropriate camera parameters')
+    parser.add_argument('-c', '--camera', metavar=None, help='The camera config name with the appropriate camera parameters')
     args = parser.parse_args()
 
     results = dict()
@@ -122,7 +122,6 @@ if __name__ == '__main__':
                 results[file] = list()
                 binary_check(path)
 
-    if args.binary:
         for key in results.keys():
             res = results[key]
             results[key] = np.mean(res)
@@ -131,4 +130,4 @@ if __name__ == '__main__':
             json.dump(results, f, indent=4)
 
     if args.video:
-        placement_check(args.video, args.config)
+        placement_check(args.video, args.camera)

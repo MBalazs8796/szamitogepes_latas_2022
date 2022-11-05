@@ -293,7 +293,7 @@ if __name__ == '__main__':
     # obj = OBJ('fox.obj', swapyz=True)
 
     # Camera Intrinsics
-    if camera_config_name == 'mb':
+    if camera_config_name == 'config_mb':
       im_w, im_h = 1280, 720
       fps = 5
       K =  np.array([ [870.25319293,  0, 637.28771858],
