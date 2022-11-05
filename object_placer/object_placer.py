@@ -187,9 +187,12 @@ if __name__ == '__main__':
     obj = OBJ('lego.obj', swapyz=True)
     og_img = getFirstFrame(args.video)
     
-    rows, cols = og_img.shape[:2]
-    h = 1000
-    w = 1000
+    og_img_height, og_img_width = og_img.shape[:2]
+    # height (h) and width (w) is incorrectly swapped in other places
+    og_h = og_img_width
+    h = og_h // 2
+    og_w = og_img_height
+    w = og_w // 2
     scale = 100
     roll = 0
     pitch = 0
@@ -200,8 +203,10 @@ if __name__ == '__main__':
         exit(0)
 
     cv2.namedWindow(scene_name)
-    cv2.createTrackbar('h', scene_name, h, 2500, vertical_track)
-    cv2.createTrackbar('w', scene_name, w, 3500, horizontal_track)
+    # + 1000 makes it possible to add coordinates outside image
+    # this was possible with hardcoded max values if image size was small
+    cv2.createTrackbar('h', scene_name, h, og_h + 1000, vertical_track)
+    cv2.createTrackbar('w', scene_name, w, og_w + 1000, horizontal_track)
     cv2.createTrackbar('Scale', scene_name, scale, 1000, scale_track)
     cv2.createTrackbar('roll', scene_name, roll, 360, roll_rot_track)
     cv2.createTrackbar('pitch', scene_name, pitch, 360, pitch_rot_track)
