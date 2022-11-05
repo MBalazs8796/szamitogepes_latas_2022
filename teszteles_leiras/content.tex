@@ -85,3 +85,28 @@ Mindkét metrika erősen emberi bemenetre hagyatkozik, azonban mivel ennél a pr
 
 \section{Potenciális javítási lehetőségek}
 
+3 javítási lehetőség fogalmazódott meg bennünk a mérföldkő folyamán:
+\begin{itemize}
+	\item A mono kameráink kimenetét RGBD-ként átadni az ORB-SLAM-nek
+	\item Az ORB-SLAM covisibility gráf optimalizálási funkciót kikapcsolni
+	\item Korábbi framek mentén limitálni a maximális transzformációt (eltolási távolság), aminek az objektum alávethető
+\end{itemize}
+
+Az ORB-SLAM a keyframek meghatározása közben minden képkockát elemez, ennek az elemzésnek az eredményét azonban Mono kamera esetén nem biztosítja a felhasználónak.
+A limitáció oka nem meghatározott, így potenciálisan áthidalható az által, hogy a kameráink RGB kimenetét kiegészítjük egy uniform mélységi értékkel, ezáltal nem módosítva az eredeti videó információ tartalmán.
+
+Az ORB-SLAM elsősorban valós idejű SLAM eszközként használatos.
+Annak érdekében, hogy ebben az esetben használható legyen számos optimalizációt végez a működéséhez szükséges covisibility gráfon, amiket a gráf pontos funkciójával együtt, az előző beadandóban már megfogalmaztunk.
+Az optimalizáció során elhagy korábbi keyframeket, amiket redundánsnak talál, ez azonban a mi esetünkben komoly nehézségekhez vezet, hiszen így potenciálisan nagy ugrások történhetnek egy-egy jelenet között, ahol a kihagyott keyframe lenne.
+Ha minden keyframet meg tudnánk tartani fokozatosabb lenne az átmenet adott pozíciók között, ami ha önmagában nem is feltétlenül vezetne szignifikáns pontosságbeli javuláshoz, azonban a harmadik javítási lépés helyességéhez jelentősen hozzátenne.
+
+Jelenleg előfordul, hogy egy-egy keyframen az általunk meghatározott pozíció "ugrik" egyet, tehát egy számítási pontatlanság miatt a két pillanatban felvett pozíció szignifikánsan eltér, annak ellenére, hogy a kamera mozgása, ezt nem indokolja.
+A hiba a keyframek menti számítások mellett nem terjed tovább, azonban a folytonosság illúzióját rombolja.
+A módszerünk azon a feltételezésen alapulna, hogy a kamera, így az általa felvett objektumok egy-egy időpillanat között, egy bizonyos távolságnál kevesebb mozgást végez, ami vagy kiszámítható a felvétel alapján (kamera mozgási sebesség, átlagos beesési szög változás stb.), vagy empirikusan meghatározható.
+A megjelenítési folyamat során számon tartanánk, vagy az objektum előző pozícióját, vagy azt a pontot, ahová a transzformáció átvitte volna, és a fentiek alapján meghatározott értékkel felülről korlátozzuk, amelyet \texttt{M}-el jelölünk majd. 
+A két megközelítés közötti központi különbség, hogy ha az előző képkockán általunk meghatározott pozíciójához képest limitáljuk az elmozdulását \texttt{M}-el, akkor a limitáció tovább terjed a későbbi eredményekre is.
+Ebben az esetben, ha a kezdeti becsléseink helyesek, azaz \texttt{M} értéke nem túl szélsőséges, és az objektum első meghatározott pozíciója helyes, a geometria nem esne át drasztikus helyváltozásokon, így limitálható lenne a maximális hiba mértéke.
+Ha \texttt{M} értéke helytelenül lett meghatározva, azaz például túl alacsony, akkor nem fogja engedni az objektumnak, hogy kövesse a kamera mozgásait, így egy folytonos csúszást bevezetve.
+Ezzel ellentétben, ha \texttt{M} csak az előző transzformációs eredményhez képest limitálná az elmozdulást, akkor az értéke kevésbé lenne kritikus, hiszen nem terjedne tovább az általa bevezetett hiba.
+Azonban, ilyenkor potenciálisan csak késleltetnék a kamera pozíciójának helytelen meghatározásából eredő hiba megjelenését, hiszen a következő képkockán már a drasztikusan hibás pozícióhoz képest limitálnánk a geometria elmozdulását.
+Lényegében azt korlátoznánk ekkor, hogy mennyit tudunk korrigálni a korábbi hibán.
