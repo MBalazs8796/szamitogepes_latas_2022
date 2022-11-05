@@ -91,7 +91,7 @@ def read_kerframe_trajectory(trajectory_fn, timestamp_fn):
         Rt = np.hstack([R, t])
         Rt = np.vstack([Rt, [0,0,0,1]])
         Rt_list.append(Rt)
-        timestamp_list.append(round(float(timestamp, 2)))
+        timestamp_list.append(round(float(timestamp), 2))
 
 
     has_pose = list()
@@ -100,7 +100,7 @@ def read_kerframe_trajectory(trajectory_fn, timestamp_fn):
       if line.strip() and line[0] != '#':
         tstamp, imgpth = line.split(' ')
         names.append(imgpth.split('/')[-1].strip())
-        if round(float(tstamp, 2)) in timestamp_list:
+        if round(float(tstamp), 2) in timestamp_list:
           has_pose.append(True)
         else:
           has_pose.append(False)
@@ -181,8 +181,8 @@ def render(img, obj, projection, h, w, color=False, scale=1):
     img = deepcopy(img)
 
     if not hasattr(render, 'points'):
-      with open(f'{scene_name}.json', 'r') as fp:
-        sm = json.load(fp)
+      with open(f'./orbslam_driver/extracted/{scene_name}/result.json', 'r') as fp:
+        sm = json.load(fp)[0]
 
       R = degree2R(sm['roll'], sm['pitch'], sm['yaw'])
       R = np.hstack([R, [[sm['h']],[sm['w']],[sm['scale']]]])
@@ -233,10 +233,10 @@ def render(img, obj, projection, h, w, color=False, scale=1):
 
 if __name__ == '__main__':
 
-    scene_name = '20221102_091459'
+    scene_name = '20221105_155537_zipped'
 
-    with open(f'{scene_name}.json', 'r') as fp:
-      sm = json.load(fp)
+    with open(f'./orbslam_driver/extracted/{scene_name}/result.json', 'r') as fp:
+      sm = json.load(fp)[0]
 
     R = degree2R(-1*sm['roll'], -1*sm['pitch'], -1*sm['yaw'])
     R = np.hstack([R, [[-1*sm['h']],[-1*sm['w']],[sm['scale']]]])
@@ -288,7 +288,7 @@ if __name__ == '__main__':
     # obj = OBJ('fox.obj', swapyz=True)
 
     # Camera Intrinsics
-    if scene_name == '20221102_091459' or scene_name == '20221102_162217':
+    if scene_name == '20221102_091459' or scene_name == '20221102_162217' or scene_name == '20221105_155537_zipped':
       im_w, im_h = 1280, 720
       fps = 5
       K =  np.array([ [870.25319293,  0, 637.28771858],

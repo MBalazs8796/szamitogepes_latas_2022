@@ -127,7 +127,7 @@ def scale_track(sc):
     showimg()
 
 def getFirstFrame(videofile: str):
-    return cv2.imread(f'../orbslam_driver/extracted/{videofile}/1.0.png')
+    return cv2.imread(f'../orbslam_driver/extracted/{videofile}/rgb/1.0.png')
 
 def save(*args):
     global h, w, scale, roll, pitch, yaw, results, scene_name
@@ -141,8 +141,11 @@ def save(*args):
     })
 
     if not next_image():
-        with open(f'../orbslam_driver/extracted/{scene_name}/result.json', 'r') as f:
+        with open(f'../orbslam_driver/extracted/{scene_name}/result.json', 'w') as f:
             json.dump(results, f, indent=4)
+        cv2.destroyAllWindows()
+        print('Placement complete')
+        exit(0)
 
 
 def get_keyframes(video_name):
@@ -151,7 +154,7 @@ def get_keyframes(video_name):
         for line in f.readlines():
             timestamp = float(line.split(' ')[0])
             timestamp = round(timestamp, 2)
-            keyframes.append(f'../orbslam_driver/extracted/rgb/{timestamp}.png')
+            keyframes.append(cv2.imread(f'../orbslam_driver/extracted/{video_name}/rgb/{timestamp}.png'))
 
     return keyframes
 
