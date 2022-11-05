@@ -1,8 +1,8 @@
+import argparse
 import math
 import cv2
 import json
 import glob
-import imageio
 import numpy as np
 from copy import deepcopy
 from object_placer.object_loader import OBJ
@@ -232,8 +232,13 @@ def render(img, obj, projection, h, w, color=False, scale=1):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-v', '--video', metavar=None, help='The name of the video')
+    parser.add_argument('-c', '--camera', metavar=None, help='The name of the camera config')
+    args = parser.parse_args()
 
-    scene_name = '20221105_155537_zipped'
+    scene_name = args.video
+    camera_config_name = args.camera
 
     with open(f'./orbslam_driver/extracted/{scene_name}/result.json', 'r') as fp:
       sm = json.load(fp)[0]
@@ -288,12 +293,14 @@ if __name__ == '__main__':
     # obj = OBJ('fox.obj', swapyz=True)
 
     # Camera Intrinsics
-    if scene_name == '20221102_091459' or scene_name == '20221102_162217' or scene_name == '20221105_155537_zipped':
+    if camera_config_name == 'mb':
       im_w, im_h = 1280, 720
       fps = 5
       K =  np.array([ [870.25319293,  0, 637.28771858],
                       [0, 866.48681104, 354.55971258],
                       [0,       0,   1]])
+    else:
+      raise ValueError(f'Camera config with name {camera_config_name} not exists')
 
 
     # Convert K [3,3] to [4,4]
