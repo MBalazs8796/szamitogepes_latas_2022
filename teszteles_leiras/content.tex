@@ -59,7 +59,27 @@ Fontos kiemelni, hogy egy feladat, ami komplexebb részekkel rendelkezik nem fel
 
 \section{Metrikák}
 
+Annak érdekében, hogy számszerűsíteni tudjuk az algoritmusunk pontosságát 2 metrikát vezettünk be.
+Mindkét metrika során a keyframeket vizsgáljuk, hiszen jelenleg csak ezeket dolgozzuk fel.
 
+Az első során egy bináris döntést hozunk arról, hogy az adott pillanatban helyesen számítottuk-e ki a geometriára alkalmazandó transzformációt, vagy sem.
+Ebben az esetben a videó keyframein egyesével végigmenve a kiértékelő meghatározza, hogy az objektum egy elfogadható hibahatáron belül helyezkedik-e el vagy sem, azaz viszonylag közel van-e ahhoz a pozícióhoz, ahol lennie kellene, ha az algoritmus helyesen működne.
+A metrika több szempontból is pontatlan, hiszen nehéz objektív konzisztenciát elvárni egy emberi megfigyelőtől, abban az esetben, ha a transzformáció az esetek nagyobb részében közel helyes.
+Ilyenkor előfordulhat, hogy egyes képeken nagyobb eltérést fogadunk el, mint máshol, szimplán azért, mert "természetesebben néz ki", vagy mi magunk sem tudjuk pontosan eldönteni, hogy hogyan kellene kinéznie az adott jelenetnek helyes működés esetén.
+Az algoritmusunk jelenlegi verziója mellett ezek a problémák nem jelentősek, hiszen nagyon szignifikáns hibákat vét az esetek jelentős arányában, így egyelőre ez a durva metrika is használható.
+Abban az esetben, ha sikerül olyan magas szofisztikációt elérni az algoritmusunk, hogya megfigyelő szubjektivitásának zavaró hatása jelentőssé válna, ez a metrika elhagyható, hiszen már elértünk egy "elég jó működést", ami után már csak mérőszámokon tudunk javítani.
+
+A második metrika is manuális értékelésre alapszik, azonban a kimenete már számszerűsített, így jobban használható az inkrementális javulások mérésére.
+A számításához egy kiválasztott keyframe halmazra, vagy akár az összes keyframere manuálisan meghatározzuk, hogy mi lenne az objektum helyes pozíciója, majd a transzformációs mátrixot, ami ehhez a pozícióhoz vezetett összehasonlítjuk a 2. mátrixnorma mentén ahhoz, amit a módszerünk határozott meg az adott képkockára.
+A normák különbségét használjuk, mint pontosság.
+Ebben az esetben a kézzel meghatározott pozíció pontossága egy határozott gyengepont, hiszen emberek számára is nagyon nehéz megmondani, hogy pontosan hol kellene egy objektumnak elhelyezkedni, az ez által bevezett hiba azonban az előzőhöz hasonlóan akkor lenne szignifikáns, ha a módszerünk nagyságrendekkel szofisztikáltabb lenne.
+Jelenleg a távolság a "helyes" és a számított pozíció között elég nagy ahhoz, hogy az emberi hiba ne legyen komoly befolyással a pontosságra.
+Abban az esetben pedig, ha egy olyan pontra jutnánk, amikor ez egy szignifikáns probléma lenne, a módszer által meghatározott pozíciót használhatnánk kiinduló pontnak, a pontos helyzet meghatározásához, hiszen ebben az esetben már csak minimális javításokra lenne szükség.
+
+A második metrika nem csak könnyebben számszerűsíthető, és de könnyen egyszerűsíthető is, hogy csak bizonyos paraméterek változására legyen érzékeny.
+Elkészíthető egy forgás, vagy eltolás invariáns verzió, ami segítségével jobban szétbontható az egyes irányokba elért fejlődés.
+
+Mindkét metrika erősen emberi bemenetre hagyatkozik, azonban mivel ennél a problémánál a "helyes" transzformáció legegyszerűbben a-mentén definiálható, hogy mi tűnik "természetesnek" egy emberi megfigyelő számára, így ez szerintünk elkerülhetetlen.
 
 \section{Eredmények}
 
