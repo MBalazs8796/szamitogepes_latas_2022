@@ -2,6 +2,7 @@ import cv2
 import os
 import argparse
 import json
+import re
 
 import numpy.linalg
 import numpy as np
@@ -106,7 +107,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('-b', '--binary', action='store_true', help='Run binary testing on the videos')
-    group.add_argument('-v', '--video', metavar=None, help='Run a placement test on a specific video')
+    group.add_argument('-p', '--placement', action='store_true', help='Run placement testing on the videos')
 
     parser.add_argument('-c', '--camera', metavar=None, help='The camera config name with the appropriate camera parameters')
     args = parser.parse_args()
@@ -128,6 +129,10 @@ if __name__ == '__main__':
 
         with open('results-binary.json', 'w') as f:
             json.dump(results, f, indent=4)
-
-    if args.video:
-        placement_check(args.video, args.camera)
+    elif args.placement:
+        for root, dirs, files in os.walk('./vids'):
+            for file in files:
+                video_name = re.sub('_match_move.avi', '', file)
+                placement_check(video_name, args.camera)
+    else:
+        raise ValueError('No test specified')
