@@ -2,6 +2,7 @@ import numpy as np
 import math
 import cv2
 import json
+import argparse
 from copy import deepcopy
 from object_loader import OBJ
 
@@ -126,33 +127,62 @@ def scale_track(sc):
     showimg()
 
 def getFirstFrame(videofile: str):
-    vidcap = cv2.VideoCapture(videofile)
-    success, image = vidcap.read()
-    if success:
-        return image
-    return False
+    return cv2.imread(f'../orbslam_driver/extracted/{videofile}/1.0.png')
 
 def save(*args):
-    global h, w, scale, roll, pitch, yaw
-    with open('result.json', 'w') as fp:
-        json.dump({
-            'h' : h,
-            'w' : w,
-            'scale' : scale,
-            'roll' : roll,
-            'pitch' : pitch,
-            'yaw' : yaw
-        }, fp, indent=2)
-    
-    print('saved')
+    global h, w, scale, roll, pitch, yaw, results, scene_name
+    results.append({
+        'h' : h,
+        'w' : w,
+        'scale' : scale,
+        'roll' : roll,
+        'pitch' : pitch,
+        'yaw' : yaw
+    })
+
+    if not next_image():
+        with open(f'../orbslam_driver/extracted/{scene_name}/result.json', 'r') as f:
+            json.dump(results, f, indent=4)
+
+
+def get_keyframes(video_name):
+    keyframes = list()
+    with open(f'../orbslam_driver/extracted/{video_name}/KeyFrameTrajectory.txt', 'r') as f:
+        for line in f.readlines():
+            timestamp = float(line.split(' ')[0])
+            timestamp = round(timestamp, 2)
+            keyframes.append(f'../orbslam_driver/extracted/rgb/{timestamp}.png')
+
+    return keyframes
+
+
+def next_image():
+    global index, og_img, keyframes
+
+    if index == len(keyframes):
+        return False
+
+    og_img = keyframes[index]
+    index += 1
+    showimg()
+
+    return True
+
 
 if __name__ == '__main__':
 
-    scene_name = 'test_scene'
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-v', '--video', metavar=None, help='The name of the video')
+    args = parser.parse_args()
 
+    scene_name = args.video
+
+    index = 0
+    results = list()
+    keyframes = get_keyframes(args.video)
 
     obj = OBJ('lego.obj', swapyz=True)
-    og_img = getFirstFrame('./vids/20221102_162217.mp4')
+    og_img = getFirstFrame(args.video)
     
     rows, cols = og_img.shape[:2]
     h = 1000
@@ -176,6 +206,7 @@ if __name__ == '__main__':
     cv2.createButton('Save', save)
 
     showimg()
+
 
     while True:
         if cv2.waitKey():
