@@ -1,12 +1,13 @@
 \section{Frissített feladatleírás}
 
-A feladatunk egy algoritmus megtervezése, elkészítése, és tervezése, amely segítségével egy valós kamera felvételbe be lehet majd szúrni egy tetszőgeles virtuális geometriát, ami hihetően reagál a kamera mozgására, és a környezetére.
-A feladat nehézsége miatt számos megszorítással, és feltétellel fogunk dolgozni, ezek a következőek:
+A feladatunk egy algoritmus megtervezése, elkészítése, és tervezése, amely segítségével egy valós kamera felvételbe be lehet majd szúrni egy tetszőleges virtuális geometriát, ami hihetően reagál a kamera mozgására, és a környezetére.
+A feladat nehézsége miatt számos megszorítással, és feltétellel fogunk dolgozni.
+Ezek a következőek:
 
 \begin{itemize}
-	\item A geometria a környezetéhez vett realtív pozíciója statikus, tahát a felvételen csak a kamera mozog
+	\item A geometria a környezetéhez vett relatív pozíciója statikus, tehát a felvételen csak a kamera mozog
 	\item A geometria nem reagál a környező fényhatásokra, nem lesz árnyékolva, és nem is vet árnyékot
-	\item A felvétel előre fel lesz véve, az algoritmus nem feltétlenül lesz alkalmas valós idejű használatra
+	\item A felvétel előre fel lesz véve, az algoritmus nem lesz alkalmas valós idejű használatra
 	\item A geometria kezdeti pozíciója előre, manuálisan meghatározott
 	\item A geometria és a kamera közé a felvétel során nem kerül obstrukció
 \end{itemize}
@@ -17,18 +18,18 @@ Az algoritmusunk nagyobb részre osztható:
 
 Első lépésként meghatározzuk a videót felvevő kamera mozgását az ORB-SLAM2~\cite{mur2015orb} segítségével.
 Az algoritmus részletesebb leírását az előző mérföldkő során bemutattuk, így itt eltekintünk tőle.
-Az ORB-SLAM2 a videó analízise után biztosítja a végső keyframe gyűjteményét, illetve az ezekben a pillanatokban általa azonosított kamera pozíciót, ezt felhasználva próbáljuk majd a kérdéses geometriát megfelelően transzformálni.
-Fontos kiemelni, hogy az ORB-SLAM2 futás közben optimalizálja a keyframek számát, azaz elvet azokat, amelyeket redundánsnak tart, azaz olyanokat, melyek túl hasonlóak egymáshoz.
+Az ORB-SLAM2 a videó analízise után biztosítja a végső keyframe-ek gyűjteményét, illetve az ezekben a pillanatokban általa azonosított kamera pozíciót, ezt felhasználva próbáljuk majd a kérdéses geometriát megfelelően transzformálni.
+Fontos kiemelni, hogy az ORB-SLAM2 futás közben optimalizálja a keyframe-ek számát, azaz elveti azokat, amelyeket redundánsnak tart, vagyis túl hasonlóak egymáshoz.
 
 A keyframe halmaz előállításához elengedhetetlen a felvevő kamera pontos kalibrációja, pontatlan kalibráció esetén az ORB-SLAM2 gyakran nem képes kellően elvégezni a szükséges pontmegfeleltetéseket, ezáltal nem lesz képes inicializálni a kamera pozícióját, ami üres kimenethez, és egy feldolgozatlan videóhoz vezet.
 A kalibrációt videó alapján végeztük, így ugyanis könnyebben tudtunk nagy mennyiségű képhez jutni, illetve el tudtuk kerülni a telefonjaink videó és fényképező módjai közötti előfeldolgozási diszparitás okozta hibákat.
 
-A keyframek meghatározása mellett fontos előfeldolgozási feladatként elhelyeztük az objektumokat az adott jelenetbe úgy, hogy végig láthatóak lehessenek.
+A keyframe-ek meghatározása mellett fontos előfeldolgozási feladatként elhelyeztük az objektumot az adott jelenetbe úgy, hogy végig látható lehessen.
 Az elhelyezést mindig a videó első képkockáján végeztük, arra való tekintet nélkül, hogy a geometria a videó fókuszpontjában legyen.
 
 A második főbb lépés a kérdéses geometria betöltése, illetve helyes transzformálása a kamera aktuális pozíciója alapján.
 Az ORB-SLAM2 kimenetében a kamera pozíciója az inicializálás pillanatában vett helyzetének transzformációival van megadva, így járható útnak tűnik, hogy ha a geometriát a kamerára alkalmazott transzformációk inverzének vetjük alá, akkor a térben felvett relatív pozíciója statikus marad, ezáltal elérve a kívánt hatást.
-Ennek a megközelítésnek egy konkrét impelentációja elérhető GitHub-on\footnote{https://github.com/ChiWeiHsiao/Match-Moving}.
+Ennek a megközelítésnek egy konkrét implementációja elérhető GitHub-on\footnote{https://github.com/ChiWeiHsiao/Match-Moving}.
 Egyelőre mi is elvetjük a nem keyframe szakaszait a vizsgált videónak, ugyanis a geometria a köztes pillanatokban felvett pozíciójának meghatározása nem javítana az algoritmus pontosságán.
 
 
@@ -39,7 +40,7 @@ A kamera mozgási sebessége, iránya, a környezet megvilágítása, a jelenetb
 Természetesen a tesztjeink közel sem képesek a teljes probléma teret lefedni, azonban megpróbáltuk azonosítani azokat az eseteket, amik a lehető legnagyobb teret fedik le.
 
 A tesztek során elsődleges célunk az algoritmus limitjeinek meghatározása volt, nem csupán az, hogy példákat gyűjtsünk helyes, és helytelen működésre.
-A megfelelő működést pontosan úgy definiáljuk, hogy a geometria egy vizuális hibahatáron belül helyezkedik el, azaz nem feltétlenül szükséges, hogy a geometria tökéletesen stabilan a megfelelő pozícóban maradjon, ez a különböző kerekítési hibák, és szükséges közelítések miatt szinte lehetetlen.
+A megfelelő működést pontosan úgy definiáljuk, hogy a geometria egy vizuális hibahatáron belül helyezkedik el, azaz nem feltétlenül szükséges, hogy a geometria tökéletesen stabilan a megfelelő pozícióban maradjon, ez a különböző kerekítési hibák, és szükséges közelítések miatt szinte lehetetlen.
 Az helyes működés így könnyebben elérhető, ezáltal a határok viszont tágabbak, ami nehezebbé teszi a meghatározásukat.
 
 Az elsősorban figyelembe vett paraméterek, a kamera mozgásának komplexitása, a környezet komplexitása, és a megvilágítás volt.
