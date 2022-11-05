@@ -4,7 +4,6 @@ import subprocess
 import shutil
 import argparse
 import tqdm
-import time
 
 
 ORB_SLAM_HOME = '/home/ORB_SLAM2'
@@ -18,14 +17,14 @@ def extract_frames(video):
 
     capture = cv2.VideoCapture(video)
 
-    i = 1
+    i = 1.0
 
     while capture.isOpened():
         ret, frame = capture.read()
         if not ret:
             break
 
-        extracted.append((frame, i))
+        extracted.append((frame, round(i, 1)))
         i += 0.1
 
     return extracted
@@ -70,4 +69,5 @@ if __name__ == '__main__':
             video = os.path.join(root, file)
             video_name = file.split('.')[0]
             save_data(video, video_name)
-            run_orb_slam(video_name, args.config)
+            if args.config:
+                run_orb_slam(video_name, args.config)

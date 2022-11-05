@@ -129,6 +129,7 @@ dmypy.json
 .pyre/
 
 orbslam_driver/vids
+checker/vids
 
 *.jpg
 *.mp4
