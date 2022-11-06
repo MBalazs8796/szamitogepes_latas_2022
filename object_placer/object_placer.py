@@ -84,17 +84,17 @@ def render(img, obj, projection, h, w, color=False, scale=1):
     return img
 
 
-def _get_placement():
+def _get_placement(i: int|None = None):
     global index, placements
+    i = index if i is None else i
 
     if placements[0] is None:
         _set_placement_from_current_values(0)
     # fill placements until index
-    for i in range(1, index+1):
-        placement = placements[i]
+    for idx in range(1, i+1):
+        placement = placements[idx]
         if placement is None:
-            print('Set placement')
-            prev_p = placements[i-1]
+            prev_p = placements[idx-1]
             _set_placement(
                 i,
                 h=prev_p['h'],
@@ -104,7 +104,7 @@ def _get_placement():
                 pitch=prev_p['pitch'],
                 yaw=prev_p['yaw']
             )
-    placement = placements[index]
+    placement = placements[i]
 
     # this can cause multiple image updates depending on how many values changed
     cv2.setTrackbarPos('h', scene_name, placement['h'])
@@ -132,14 +132,7 @@ def _set_placement_from_current_values(i: int|None = None):
     global index, h, w, scale, roll, pitch, yaw
     i = index if i is None else i
 
-    placements[i] = {
-        'h' : h,
-        'w' : w,
-        'scale' : scale,
-        'roll' : roll,
-        'pitch' : pitch,
-        'yaw' : yaw
-    }
+    _set_placement(i, h, w, scale, roll, pitch, yaw)
 
 
 def showimg():
@@ -154,6 +147,8 @@ def showimg():
 def frame_track(i):
     global index, og_img
 
+    if i != index:
+        _set_placement_from_current_values()
     index = i
     og_img = keyframes[index]
     _get_placement()
@@ -292,8 +287,13 @@ if __name__ == '__main__':
 
     while True:
         key = cv2.waitKey()
+        # keyboard shortcut for next / save
         if key == ord('s'):
             save()
+        # keyboard shortcut to load previous frame's placement to current frame
+        elif key == ord('p'):
+            if index > 0:
+                _get_placement(index - 1)
         else:
             cv2.destroyWindow(scene_name)
             break
