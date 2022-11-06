@@ -84,20 +84,55 @@ def render(img, obj, projection, h, w, color=False, scale=1):
     return img
 
 
-def _use_placement_from_file():
-    global index, h, w, scale, roll, pitch, yaw, placements_from_file
+def _get_placement(i: int|None = None):
+    global index, placements
+    i = index if i is None else i
 
-    if len(placements_from_file) == 0:
-        return
-    previous_psotion = placements_from_file[index]
+    if placements[0] is None:
+        _set_placement_from_current_values(0)
+    # fill placements until index
+    for idx in range(1, i+1):
+        placement = placements[idx]
+        if placement is None:
+            prev_p = placements[idx-1]
+            _set_placement(
+                i,
+                h=prev_p['h'],
+                w=prev_p['w'],
+                scale=prev_p['scale'],
+                roll=prev_p['roll'],
+                pitch=prev_p['pitch'],
+                yaw=prev_p['yaw']
+            )
+    placement = placements[i]
 
-    # this causes multiple image updates
-    cv2.setTrackbarPos('h', scene_name, previous_psotion['h'])
-    cv2.setTrackbarPos('w', scene_name, previous_psotion['w'])
-    cv2.setTrackbarPos('scale', scene_name, previous_psotion['scale'])
-    cv2.setTrackbarPos('roll', scene_name, previous_psotion['roll'])
-    cv2.setTrackbarPos('pitch', scene_name, previous_psotion['pitch'])
-    cv2.setTrackbarPos('yaw', scene_name, previous_psotion['yaw'])
+    # this can cause multiple image updates depending on how many values changed
+    cv2.setTrackbarPos('h', scene_name, placement['h'])
+    cv2.setTrackbarPos('w', scene_name, placement['w'])
+    cv2.setTrackbarPos('scale', scene_name, placement['scale'])
+    cv2.setTrackbarPos('roll', scene_name, placement['roll'])
+    cv2.setTrackbarPos('pitch', scene_name, placement['pitch'])
+    cv2.setTrackbarPos('yaw', scene_name, placement['yaw'])
+
+
+def _set_placement(index, h, w, scale, roll, pitch, yaw):
+    global placements
+
+    placements[index] = {
+        'h' : h,
+        'w' : w,
+        'scale' : scale,
+        'roll' : roll,
+        'pitch' : pitch,
+        'yaw' : yaw
+    }
+
+
+def _set_placement_from_current_values(i: int|None = None):
+    global index, h, w, scale, roll, pitch, yaw
+    i = index if i is None else i
+
+    _set_placement(i, h, w, scale, roll, pitch, yaw)
 
 
 def showimg():
@@ -108,6 +143,17 @@ def showimg():
     R = np.vstack([R, [0,0,0,1]])
     img = render(og_img, obj, R, h=1, w=1, color=False, scale = scale)
     cv2.imshow(scene_name, img)
+
+def frame_track(i):
+    global index, og_img
+
+    if i != index:
+        _set_placement_from_current_values()
+    index = i
+    og_img = keyframes[index]
+    _get_placement()
+
+    showimg()
 
 def roll_rot_track(r):
     global roll
@@ -152,19 +198,11 @@ def getFirstFrame(videofile: str):
     return cv2.imread(f'../orbslam_driver/extracted/{videofile}/rgb/1.0.png')
 
 def save(*args):
-    global h, w, scale, roll, pitch, yaw, results, scene_name
-    results.append({
-        'h' : h,
-        'w' : w,
-        'scale' : scale,
-        'roll' : roll,
-        'pitch' : pitch,
-        'yaw' : yaw
-    })
+    global placements
 
     if not next_image():
         with open(_get_result_file(), 'w') as f:
-            json.dump(results, f, indent=4)
+            json.dump(placements, f, indent=4)
         cv2.destroyAllWindows()
         print('Placement complete')
         exit(0)
@@ -182,17 +220,13 @@ def get_keyframes(video_name):
 
 
 def next_image():
-    global index, og_img, keyframes
+    global index, scene_name, keyframes
 
-    if index == len(keyframes):
-        return False
-
-    og_img = keyframes[index]
-    index += 1
-    _use_placement_from_file()
-    showimg()
-
-    return True
+    _set_placement_from_current_values()
+    if index < (len(keyframes) - 1):
+        cv2.setTrackbarPos('frame', scene_name, index + 1)
+        return True
+    return False
 
 
 if __name__ == '__main__':
@@ -206,11 +240,11 @@ if __name__ == '__main__':
 
     index = 0
     results = list()
-    keyframes = get_keyframes(args.video)
+    og_img = getFirstFrame(args.video)
+    keyframes = [og_img] + get_keyframes(args.video)
 
     obj = OBJ('lego.obj', swapyz=True)
-    og_img = getFirstFrame(args.video)
-    
+
     og_img_height, og_img_width = og_img.shape[:2]
     # height (h) and width (w) is incorrectly swapped in other places
     og_h = og_img_width
@@ -226,7 +260,18 @@ if __name__ == '__main__':
         cv2.destroyWindow(scene_name)
         exit(0)
 
+    placements = [None] * len(keyframes)
+    if args.previous:
+        with open(_get_result_file()) as f:
+            placements = json.load(f)
+            if len(keyframes) != len(placements):
+                raise ValueError('Previous placement file includes different number of keyframes')
+
     cv2.namedWindow(scene_name)
+    if len(keyframes) > 1:
+        cv2.createTrackbar('frame', scene_name, index, len(keyframes) - 1, frame_track)
+    else:
+        frame_track(index)
     # + 1000 makes it possible to add coordinates outside image
     # this was possible with hardcoded max values if image size was small
     cv2.createTrackbar('h', scene_name, h, og_h + 1000, vertical_track)
@@ -237,19 +282,24 @@ if __name__ == '__main__':
     cv2.createTrackbar('yaw', scene_name, yaw, 360, yaw_rot_track)
     cv2.createButton('Save', save)
 
-    placements_from_file = []
-    if args.previous:
-        with open(_get_result_file()) as f:
-            placements_from_file = json.load(f)
-            if (len(keyframes) + 1) != len(placements_from_file):
-                raise ValueError('Previous placement file includes different number of keyframes')
-            _use_placement_from_file()
-
-    showimg()
+    _get_placement()
 
 
     while True:
-        if cv2.waitKey():
+        key = cv2.waitKey()
+        # keyboard shortcut for next frame / save
+        if key == ord('s'):
+            save()
+        # keyboard shortcut to load previous frame's placement to current frame
+        elif key == ord('p'):
+            if index > 0:
+                _get_placement(index - 1)
+        # keyboard shortcut to select previous frame
+        elif key == ord('a'):
+            cv2.setTrackbarPos('frame', scene_name, index - 1)
+        # keyboard shortcut to select next frame
+        elif key == ord('d'):
+            cv2.setTrackbarPos('frame', scene_name, index + 1)
+        else:
             cv2.destroyWindow(scene_name)
             break
-        
