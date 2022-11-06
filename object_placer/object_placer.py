@@ -198,7 +198,7 @@ def getFirstFrame(videofile: str):
     return cv2.imread(f'../orbslam_driver/extracted/{videofile}/rgb/1.0.png')
 
 def save(*args):
-    global index, h, w, scale, roll, pitch, yaw, placements, scene_name
+    global placements
 
     if not next_image():
         with open(_get_result_file(), 'w') as f:
@@ -220,7 +220,7 @@ def get_keyframes(video_name):
 
 
 def next_image():
-    global index, og_img, keyframes
+    global index, scene_name, keyframes
 
     _set_placement_from_current_values()
     if index < (len(keyframes) - 1):
@@ -287,13 +287,19 @@ if __name__ == '__main__':
 
     while True:
         key = cv2.waitKey()
-        # keyboard shortcut for next / save
+        # keyboard shortcut for next frame / save
         if key == ord('s'):
             save()
         # keyboard shortcut to load previous frame's placement to current frame
         elif key == ord('p'):
             if index > 0:
                 _get_placement(index - 1)
+        # keyboard shortcut to select previous frame
+        elif key == ord('a'):
+            cv2.setTrackbarPos('frame', scene_name, index - 1)
+        # keyboard shortcut to select next frame
+        elif key == ord('d'):
+            cv2.setTrackbarPos('frame', scene_name, index + 1)
         else:
             cv2.destroyWindow(scene_name)
             break
