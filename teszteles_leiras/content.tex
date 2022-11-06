@@ -59,6 +59,38 @@ Fontos kiemelni, hogy egy feladat, ami komplexebb részekkel rendelkezik nem fel
 
 \section{Metrikák}
 
+\begin{figure*}
+	\centering
+	\begin{subfigure}[b]{0.49\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{figs/the_odd_one_out.png}
+		\caption{Sok fény, egyszerű mozgás, nincs forgatás}
+		\label{fig:odd}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}[b]{0.5\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{figs/mood.png}
+		\caption{Közepes fény, komplex mozgás, kevés forgatás}
+		\label{fig:mood}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}[b]{0.49\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{figs/skinny_sticks.png}
+		\caption{Sok fény, komplex mozgás, nincs forgatás}
+		\label{fig:skinny}
+	\end{subfigure}
+	\begin{subfigure}[b]{0.5\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{figs/massiva_shlong.png}
+		\caption{Kevés fény, egyszerű mozgás, sok forgatás}
+		\label{fig:italian}
+	\end{subfigure}
+	\caption{Az algoritmusunk teljesítményének vizualizációja}
+	\label{fig:bars}
+\end{figure*}
+
 Annak érdekében, hogy számszerűsíteni tudjuk az algoritmusunk pontosságát 2 metrikát vezettünk be.
 Mindkét metrika során a keyframe-eket vizsgáljuk, hiszen jelenleg csak ezeket dolgozzuk fel.
 
@@ -82,6 +114,39 @@ Elkészíthető egy forgás, vagy eltolás invariáns verzió, ami segítségév
 Mindkét metrika erősen emberi bemenetre hagyatkozik, azonban mivel ennél a problémánál a "helyes" transzformáció legegyszerűbben azzal definiálható, hogy mi tűnik "természetesnek" egy emberi megfigyelő számára, így ez szerintünk elkerülhetetlen.
 
 \section{Eredmények}
+
+Itt tárgyaljuk a kezdeti demó verzió által elért eredményeket, illetve a felfedezett gyenge pontokat.
+
+\subsection{Inicializáció}
+
+Az ORB-SLAM első lépésként megpróbál egy alkalmas ponthalmazt azonosítani, aminek segítségével képes lesz a kamera mozgását meghatározni.
+Ez a lépés nagyobb kihívást jelent, mint arra számítottunk, és a tesztjeink jelentős részén nem is sikerült.
+Ennek a hiányosságnak oka lehet, ha az adott kamera mátrixa helytelenül van meghatározva, ha a felvétel nem elég kontrasztos, számos egyéb lehetőség mellett.
+Azokat a teszteket, ahol nem sikerült az inicializáció nem vetjük el, hiszen a következő mérföldkő keretein belül ezt javítandó paraméterként tartjuk számon.
+Közel 30 teszt videó készült, 3 különböző kamerával.
+Ezek közül összesen 8 videóra sikerült inicializálnia az eszköznek, amik mind egy kamerával készültek.
+
+Mind a 8 videó ugyan azzal a kamerával készült, így joggal gondolhatnánk, hogy a helytelen kalibráció okozta a nehézséget a többi esetben, azonban az ezzel az eszközzel készült felvételeken is nehézséget okozott ez a folyamat.
+A 3. mérföldkő során javítani tervezzük az inicializációs rátát.
+
+\subsection{Bináris metrika}
+
+Az algoritmus jelenlegi verziója nem produkál egyetlen képkockát sem, amin az objektum a kezdeti pozíciója hihető hibahatáron belül lenne.
+A geometria mozgásának mértéke lényegesen eltér a kameráétól, így a viszonylag egyszerű mozgásokat tartalmazó képsorozatokat sem követi helyesen.
+
+\subsection{Transzformációs különbség metrika}
+
+A~\ref*{fig:bars}. ábrán látható a 4 legtöbb keyframe-el rendelkező videó transzformációs mátrixok különbségének Frobenius normája.
+Ez az érték a két mátrix "távolsága", esetünkben tehát a módszerünk hibája.
+Az árbán látható, hogy amikor az ORB-SLAM sikeresen inicializál, viszonylag konzisztens pontosságot képes produkálni, tehát nincsenek nagyságrendbeli eltérések a legtöbb esetben az adott időpillanatok között.
+
+A legnagyobb hibát azzal a videóval kapcsolatban tapasztaljuk, ahol viszonylag komplex mozgást végez kamera, és ebben az esetben készül a legtöbb keyframe is.
+A mozgás követése tehát nehézséget okoz, ami kiemelendő, hiszen a legjobb előrejelző faktor azzal kapcsolatban, hogy sikeres lesz-e az inicializáció a jelenet megvilágítása, azonban a méréseink alapján állíthatjuk, hogy a jelenet megvilágításának mennyisége, ha sikerül megkezdeni a követést nem annyira jelentős, mint a végzett mozgás komplexitása.
+
+\subsection{A manuális meghatározás hatása}
+
+Mivel a metrikákban meghatározott értékek egyénileg manuális lettek meghatározva, előfordulhat, hogy kisebb ingadozásokért az ellenőrző felelős, azonban a jelentős pontosságbeli ugrásokat közös vizsgálat során verifikáltuk.
+E-mellet a hiba nagyságrendje miatt, a kisebb hibák, amiket a feladat monotonitása okozna a manuális értékelés során, elfedődnek.
 
 \section{Potenciális javítási lehetőségek}
 
