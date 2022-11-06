@@ -10,8 +10,10 @@ def create_plot(result, plot_name):
     if not os.path.isdir('./figs'):
         os.mkdir('./figs')
 
-    sns.barplot(x=np.arange(len(result)), y=result, palette='Blues')
+    plot = sns.barplot(x=np.arange(len(result)), y=result, palette='Blues')
+    plot.set(xticklabels=[])
     plt.savefig(f'./figs/{plot_name}.png')
+    plt.clf()
 
 
 if __name__ == '__main__':
@@ -20,5 +22,5 @@ if __name__ == '__main__':
             if not file == 'results-binary.json':
                 with open(os.path.join(root, file), 'r') as f:
                     result = json.load(f)
-                    plot_name = file.split('_')[1].split('.')[0]
+                    plot_name = file.split('results_')[-1].split('.')[0]
                     create_plot(result['norms'], plot_name)
