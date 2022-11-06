@@ -2,6 +2,7 @@ import cv2
 import os
 import argparse
 import json
+import re
 
 import numpy.linalg
 import numpy as np
@@ -35,7 +36,7 @@ def binary_check(video):
 
 def get_camera_matrix(config):
     elements = dict()
-    with open(config, 'r') as f:
+    with open(f'../orbslam_driver/{config}.yaml', 'r') as f:
         for line in f.readlines():
             if line.startswith('Camera.fx:'):
                 elements['fx'] = float(line.strip().split(' ')[-1])
@@ -106,9 +107,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('-b', '--binary', action='store_true', help='Run binary testing on the videos')
-    group.add_argument('-v', '--video', metavar=None, help='Run a placement test on a specific video')
+    group.add_argument('-p', '--placement', action='store_true', help='Run placement testing on the videos')
 
-    parser.add_argument('-c', '--config', metavar=None, help='The config with the appropriate camera parameters')
+    parser.add_argument('-c', '--camera', metavar=None, help='The camera config name with the appropriate camera parameters')
     args = parser.parse_args()
 
     results = dict()
@@ -122,13 +123,16 @@ if __name__ == '__main__':
                 results[file] = list()
                 binary_check(path)
 
-    if args.binary:
         for key in results.keys():
             res = results[key]
             results[key] = np.mean(res)
 
         with open('results-binary.json', 'w') as f:
             json.dump(results, f, indent=4)
-
-    if args.video:
-        placement_check(args.video, args.config)
+    elif args.placement:
+        for root, dirs, files in os.walk('./vids'):
+            for file in files:
+                video_name = re.sub('_match_move.avi', '', file)
+                placement_check(video_name, args.camera)
+    else:
+        raise ValueError('No test specified')

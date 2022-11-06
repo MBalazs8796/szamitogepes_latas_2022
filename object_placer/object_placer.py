@@ -6,6 +6,12 @@ import argparse
 from copy import deepcopy
 from object_loader import OBJ
 
+
+def _get_result_file():
+    global scene_name
+    return f'../orbslam_driver/extracted/{scene_name}/result.json'
+
+
 def degree2R(roll, pitch, yaw):
     roll = math.radians(roll)
     pitch = math.radians(pitch)
@@ -78,6 +84,22 @@ def render(img, obj, projection, h, w, color=False, scale=1):
     return img
 
 
+def _use_placement_from_file():
+    global index, h, w, scale, roll, pitch, yaw, placements_from_file
+
+    if len(placements_from_file) == 0:
+        return
+    previous_psotion = placements_from_file[index]
+
+    # this causes multiple image updates
+    cv2.setTrackbarPos('h', scene_name, previous_psotion['h'])
+    cv2.setTrackbarPos('w', scene_name, previous_psotion['w'])
+    cv2.setTrackbarPos('scale', scene_name, previous_psotion['scale'])
+    cv2.setTrackbarPos('roll', scene_name, previous_psotion['roll'])
+    cv2.setTrackbarPos('pitch', scene_name, previous_psotion['pitch'])
+    cv2.setTrackbarPos('yaw', scene_name, previous_psotion['yaw'])
+
+
 def showimg():
     global h, w, scale, roll, pitch, yaw,scene_name, og_img
 
@@ -141,7 +163,7 @@ def save(*args):
     })
 
     if not next_image():
-        with open(f'../orbslam_driver/extracted/{scene_name}/result.json', 'w') as f:
+        with open(_get_result_file(), 'w') as f:
             json.dump(results, f, indent=4)
         cv2.destroyAllWindows()
         print('Placement complete')
@@ -167,6 +189,7 @@ def next_image():
 
     og_img = keyframes[index]
     index += 1
+    _use_placement_from_file()
     showimg()
 
     return True
@@ -176,6 +199,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-v', '--video', metavar=None, help='The name of the video')
+    parser.add_argument('-p', '--previous', action='store_true', help='Use previous object placement file')
     args = parser.parse_args()
 
     scene_name = args.video
@@ -187,9 +211,12 @@ if __name__ == '__main__':
     obj = OBJ('lego.obj', swapyz=True)
     og_img = getFirstFrame(args.video)
     
-    rows, cols = og_img.shape[:2]
-    h = 1000
-    w = 1000
+    og_img_height, og_img_width = og_img.shape[:2]
+    # height (h) and width (w) is incorrectly swapped in other places
+    og_h = og_img_width
+    h = og_h // 2
+    og_w = og_img_height
+    w = og_w // 2
     scale = 100
     roll = 0
     pitch = 0
@@ -200,13 +227,23 @@ if __name__ == '__main__':
         exit(0)
 
     cv2.namedWindow(scene_name)
-    cv2.createTrackbar('h', scene_name, h, 2500, vertical_track)
-    cv2.createTrackbar('w', scene_name, w, 3500, horizontal_track)
-    cv2.createTrackbar('Scale', scene_name, scale, 1000, scale_track)
+    # + 1000 makes it possible to add coordinates outside image
+    # this was possible with hardcoded max values if image size was small
+    cv2.createTrackbar('h', scene_name, h, og_h + 1000, vertical_track)
+    cv2.createTrackbar('w', scene_name, w, og_w + 1000, horizontal_track)
+    cv2.createTrackbar('scale', scene_name, scale, 1000, scale_track)
     cv2.createTrackbar('roll', scene_name, roll, 360, roll_rot_track)
     cv2.createTrackbar('pitch', scene_name, pitch, 360, pitch_rot_track)
     cv2.createTrackbar('yaw', scene_name, yaw, 360, yaw_rot_track)
     cv2.createButton('Save', save)
+
+    placements_from_file = []
+    if args.previous:
+        with open(_get_result_file()) as f:
+            placements_from_file = json.load(f)
+            if (len(keyframes) + 1) != len(placements_from_file):
+                raise ValueError('Previous placement file includes different number of keyframes')
+            _use_placement_from_file()
 
     showimg()
 

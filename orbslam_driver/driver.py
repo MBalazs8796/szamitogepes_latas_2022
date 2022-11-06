@@ -4,11 +4,18 @@ import subprocess
 import shutil
 import argparse
 import tqdm
+from pathlib import Path
 
 
 ORB_SLAM_HOME = '/home/ORB_SLAM2'
 TUM_DRIVER = 'Examples/Monocular/mono_tum'
 VOCABULARY = 'Vocabulary/ORBvoc.txt'
+
+
+def _get_video_folder(video_name):
+    video_folder = f'./extracted/{video_name}'
+    Path(video_folder).mkdir(parents=True, exist_ok=True)
+    return video_folder
 
 
 def extract_frames(video):
@@ -33,13 +40,8 @@ def extract_frames(video):
 def save_data(video, video_name):
     print(f'Creating folder for {video}')
 
-    if not os.path.isdir('./extracted'):
-        os.mkdir('./extracted')
-
-    video_folder = f'./extracted/{video_name}'
-    if not os.path.isdir(video_folder):
-        os.mkdir(video_folder)
-        os.mkdir(f'{video_folder}/rgb')
+    video_folder = _get_video_folder(video_name)
+    Path(f'{video_folder}/rgb').mkdir(parents=True, exist_ok=True)
 
     with open(f'{video_folder}/rgb.txt', 'w') as f:
         f.write('# whatever 1\n')
@@ -53,7 +55,7 @@ def save_data(video, video_name):
 
 def run_orb_slam(video_name, config):
     print('Running ORB_SLAM')
-    video_folder = f'./extracted/{video_name}'
+    video_folder = _get_video_folder(video_name)
     print(f'{ORB_SLAM_HOME}/{TUM_DRIVER} {ORB_SLAM_HOME}/{VOCABULARY} {config} {video_folder}/')
     subprocess.run(f'{ORB_SLAM_HOME}/{TUM_DRIVER} {ORB_SLAM_HOME}/{VOCABULARY} {config} {video_folder}/', shell=True)
     shutil.move('./KeyFrameTrajectory.txt', f'{video_folder}/KeyFrameTrajectory.txt')
