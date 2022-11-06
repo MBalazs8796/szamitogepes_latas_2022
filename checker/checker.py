@@ -125,7 +125,10 @@ if __name__ == '__main__':
 
         for key in results.keys():
             res = results[key]
-            results[key] = np.mean(res)
+            if len(res) > 0:
+                results[key] = np.mean(res)
+            else:
+                results[key] = 0.0
 
         with open('results-binary.json', 'w') as f:
             json.dump(results, f, indent=4)
