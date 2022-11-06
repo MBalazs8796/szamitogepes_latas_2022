@@ -130,6 +130,8 @@ dmypy.json
 
 orbslam_driver/vids
 checker/vids
+checker/results/
+checker/figs/
 
 *.jpg
 *.mp4
