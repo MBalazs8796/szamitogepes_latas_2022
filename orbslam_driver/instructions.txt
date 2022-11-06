@@ -1,4 +1,0 @@
-1. Create a folder named 'vids' next to the driver.py, and put the test videos inside the folder
-2. Run the docker image, but mount the orbslam_driver directory (-v <path_to_orbslam_driver>:<some_directory_in_image>)
-3. cd <some_directory_in_image>
-4. Run the driver inside the docker image with: python3 driver.py -c config.yaml (the current config is a placeholder)
