@@ -4,8 +4,10 @@ import cv2
 import json
 import glob
 import numpy as np
+import re
 from copy import deepcopy
 from object_placer.object_loader import OBJ
+from pathlib import Path
 
 def quat2mat(q):
     ''' Calculate rotation matrix corresponding to quaternion
@@ -230,6 +232,11 @@ def render(img, obj, projection, h, w, color=False, scale=1):
     return img
 
 
+def _bg_filename_sort_key(filename: str):
+  basename = Path(filename).name
+  basename_parts_without_extension = basename.split('.')[:-1]
+  return float('.'.join(basename_parts_without_extension))
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -249,7 +256,7 @@ if __name__ == '__main__':
 
     # read file
     bg_filenames = glob.glob(f'./orbslam_driver/extracted/{scene_name}/rgb/*.png')
-    bg_filenames.sort()
+    bg_filenames.sort(key=_bg_filename_sort_key)
     poses, has_pose, names = read_kerframe_trajectory(f'./orbslam_driver/extracted/{scene_name}/KeyFrameTrajectory.txt', f'./orbslam_driver/extracted/{scene_name}/rgb.txt')
 
     video_path = f'./vids/{scene_name}.mp4'
