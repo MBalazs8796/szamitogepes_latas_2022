@@ -3,6 +3,11 @@
 #--------------------------------------------------------------------------------------------
 # Camera Parameters. Adjust them!
 #--------------------------------------------------------------------------------------------
+# ORBSLAM3 parameters
+File.version: "1.0"
+Camera.type: "PinHole"
+Camera.width: 1280
+Camera.height: 720
 
 # Camera calibration and distortion parameters (OpenCV) 
 Camera.fx: 870.25319293 

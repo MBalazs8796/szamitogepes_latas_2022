@@ -29,3 +29,12 @@ services:
     <<: *orbslam
     environment:
       DISPLAY: unix${DISPLAY}
+
+  orbslam3:
+    <<: *orbslam
+    build:
+      dockerfile: orbslam_driver/orbslam3/Dockerfile
+      context: ../
+    environment:
+      DISPLAY: unix${DISPLAY}
+      QT_X11_NO_MITSHM: 1
