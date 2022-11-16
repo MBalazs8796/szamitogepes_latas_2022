@@ -13,24 +13,17 @@
 
     ```sh
     xhost +
-    docker compose build
+    DOCKER_BUILDKIT=1 docker compose build
 
-    # with nvidea gpu
+    # ORBSLAM2 with nvidea gpu
     docker compose run --rm orbslam python3 driver.py -c <config file path inside orbslam_driver directory>
-    # without using a gpu
+    # ORBSLAM2 without using a gpu
     docker compose run --rm orbslam-nogpu python3 driver.py -c <config file path inside orbslam_driver directory>
+    # ORBSLAM3
+    docker compose run --rm orbslam3 python3 driver.py -c <config file path inside orbslam_driver directory>
     ```
 
 ### ORBSLAM3
-
-```sh
-xhost +
-DOCKER_BUILDKIT=1 docker compose build
-
-docker compose run --rm orbslam3
-/ORB_SLAM3/Examples/Monocular/mono_tum /ORB_SLAM3/Vocabulary/ORBvoc.txt /data/${config_name}.yaml /data/extracted/${video_name}/
-cat /ORB_SLAM3/KeyFrameTrajectory.txt
-```
 
 Additional config parameters for ORBSLAM3 compared to ORBSLAM2:
 
