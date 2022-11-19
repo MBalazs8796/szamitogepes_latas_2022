@@ -241,18 +241,15 @@ def _bg_filename_sort_key(filename: str):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-v', '--video', metavar=None, help='The name of the video')
-    parser.add_argument('-c', '--camera', metavar=None, help='The name of the camera config')
+    parser.add_argument('-c', '--config', metavar=None, help='The name of the camera config')
     args = parser.parse_args()
 
     scene_name = args.video
-    camera_config_name = args.camera
+    camera_config_name = args.config
 
     with open(f'./orbslam_driver/extracted/{scene_name}/result.json', 'r') as fp:
       sm = json.load(fp)[0]
 
-    R = degree2R(-1*sm['roll'], -1*sm['pitch'], -1*sm['yaw'])
-    R = np.hstack([R, [[-1*sm['h']],[-1*sm['w']],[sm['scale']]]])
-    R = np.vstack([R, [0,0,0,1]])
 
     # read file
     bg_filenames = glob.glob(f'./orbslam_driver/extracted/{scene_name}/rgb/*.png')
@@ -261,7 +258,6 @@ if __name__ == '__main__':
 
     video_path = f'./vids/{scene_name}.mp4'
            
-    has_pose = [bg_name.split('/')[-1].strip() in names and has_pose[names.index(bg_name.split('/')[-1].strip())] for bg_name in bg_filenames]
     
     video = cv2.VideoCapture(video_path)
     
@@ -271,7 +267,6 @@ if __name__ == '__main__':
         print('Error opening video')
         exit(69)
 
-    cv2.namedWindow(scene_name)
               
     bg_filenames = np.array(bg_filenames)
     bg_filenames = bg_filenames[has_pose]
@@ -309,7 +304,6 @@ if __name__ == '__main__':
     else:
       raise ValueError(f'Camera config with name {camera_config_name} not exists')
 
-
     # Convert K [3,3] to [4,4]
     K = np.hstack([K, np.zeros([3,1])])
     K = np.vstack([K, [0,0,0,1]])
@@ -322,10 +316,10 @@ if __name__ == '__main__':
       img = cv2.imread(bg_filenames[i])
 
 
-      t_model = [[sm['h']/-5],[sm['w']/10],[-500]]
-      R_model = degree2R(sm['roll'], sm['pitch']/2, sm['yaw']/2)
-      #R_model = degree2R(roll=0, pitch=0, yaw=0)
-      #t_model = np.array([[0, 0, -500]]).T  # 14000
+      #t_model = [[sm['h']],[sm['w']],[-500]]
+      #R_model = degree2R(sm['roll'], sm['pitch'], sm['yaw'])
+      R_model = degree2R(roll=0, pitch=0, yaw=0)
+      t_model = np.array([[100, 0, -500]]).T  # 14000
       Rt_model = np.hstack([R_model, t_model]) 
       Rt_model = np.vstack([Rt_model, [0,0,0,1]])
 
@@ -347,8 +341,8 @@ if __name__ == '__main__':
       img = render(img, obj, P, h=1, w=1, color=False, scale=10)
       # img = render(img, obj, Rt_model, h=0, w=0, color=False)
 
-      #cv2.imshow(scene_name, img)
-      #if cv2.waitKey() == ord('q'):
+      # cv2.imshow(scene_name, img)
+      # if cv2.waitKey() == ord('q'):
       #  break
       result_imgs.append(img)
     writer = cv2.VideoWriter(f'{scene_name}_match_move.avi', cv2.VideoWriter_fourcc(*'XVID'), fps, (im_w, im_h))
