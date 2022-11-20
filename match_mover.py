@@ -5,6 +5,7 @@ import json
 import glob
 import numpy as np
 import re
+from scipy.spatial.transform import Rotation
 from copy import deepcopy
 from object_placer.object_loader import OBJ
 from pathlib import Path
@@ -89,7 +90,7 @@ def read_kerframe_trajectory(trajectory_fn, timestamp_fn):
         nums = [float(n) for n in line.split(' ')]
         timestamp = nums[0]
         t = np.array(nums[1:4]).reshape([3,1])
-        R = quat2mat(nums[4:])
+        R = Rotation.from_quat(nums[4:]).as_matrix()
         Rt = np.hstack([R, t])
         Rt = np.vstack([Rt, [0,0,0,1]])
         Rt_list.append(Rt)
@@ -199,10 +200,11 @@ def render(img, obj, projection, h, w, color=False, scale=1):
 
         # render model in the middle of the reference surface. To do so,
         # model points must be displaced
-        points = np.array([[p[0] + w / 2, p[1] + h / 2, p[2]] for p in points])
+        #points = np.array([[p[0] + w / 2, p[1] + h / 2, p[2]] for p in points])
 
         #point_list.append(cv2.perspectiveTransform(points.reshape(-1, 1, 3), R))
-        point_list.append(points.reshape(-1, 1, 3))
+        #point_list.append(points.reshape(-1, 1, 3))
+        point_list.append(points)
       setattr(render, 'point_list', point_list)
 
 
@@ -210,17 +212,24 @@ def render(img, obj, projection, h, w, color=False, scale=1):
 
         #print(points)
         #print(projection)
-
-        dst = cv2.perspectiveTransform(points.reshape(-1, 1, 3), projection)
+        #print(points.reshape(-1, 1, 3).shape)
+        #print("################################")
+        dst = cv2.transform(points.reshape(-1, 1, 3), projection)
+        #print(dst.shape)
+        #dst = dst @ np.diag([0.1, 0.1, 1])
+        
+        #for point in points:
+          
+        #print(points.reshape(3,3))
         #print(dst)
         #exit(69)
         imgpts = np.int32(dst)
-        # r = list()
-        # for f in imgpts:
-        #     r.append(list())
-        #     for s in f:
-        #         r[-1].append(s[:-1])
-        # imgpts = np.array(r)
+        r = list()
+        for f in imgpts:
+            r.append(list())
+            for s in f:
+                r[-1].append(s[:-1])
+        imgpts = np.array(r)
         if color is False:
             cv2.fillConvexPoly(img, imgpts, (137, 27, 211))
         else:
@@ -319,7 +328,7 @@ if __name__ == '__main__':
       #t_model = [[sm['h']],[sm['w']],[-500]]
       #R_model = degree2R(sm['roll'], sm['pitch'], sm['yaw'])
       R_model = degree2R(roll=0, pitch=0, yaw=0)
-      t_model = np.array([[100, 0, -500]]).T  # 14000
+      t_model = np.array([[0, 0, -2]]).T  # 14000
       Rt_model = np.hstack([R_model, t_model]) 
       Rt_model = np.vstack([Rt_model, [0,0,0,1]])
 
@@ -327,23 +336,26 @@ if __name__ == '__main__':
 
       # Camera Pose
       Rt_cam = poses[i]
-      #Rt_cam = np.linalg.inv(Rt_cam)
-
+      #print(Rt_cam)
+      #Rt_cam = cv2.invertAffineTransform(Rt_cam)
+      Rt_cam = np.linalg.pinv(Rt_cam)
+      
+      #Rt_cam = np.linalg.pinv(Rt_cam)
       Rt = Rt_cam @ Rt_model
-
-      Rt = approx_rotation(Rt[:-1, :])
+      #Rt = approx_rotation(Rt[:-1, :])
+      #Rt = np.linalg.pinv(Rt)
       #print('Rt', Rt, end='\n\n')
       P = K @ Rt
+
       #P = Rt
       #print('P', P, end='\n\n')
       P = P[:-1, :]  # [4,4] -> [3,4]
-
-      img = render(img, obj, P, h=1, w=1, color=False, scale=10)
+      img = render(img, obj, P, h=1, w=1, color=False, scale=1)
       # img = render(img, obj, Rt_model, h=0, w=0, color=False)
 
-      # cv2.imshow(scene_name, img)
-      # if cv2.waitKey() == ord('q'):
-      #  break
+      cv2.imshow(scene_name, img)
+      if cv2.waitKey() == ord('q'):
+       break
       result_imgs.append(img)
     writer = cv2.VideoWriter(f'{scene_name}_match_move.avi', cv2.VideoWriter_fourcc(*'XVID'), fps, (im_w, im_h))
     for i in result_imgs:

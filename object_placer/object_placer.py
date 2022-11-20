@@ -127,11 +127,19 @@ def render(img, obj, projection, h, w, color=False, scale=1):
 
         # render model in the middle of the reference surface. To do so,
         # model points must be displaced
-        points = np.array([[p[0] + w / 2, p[1] + h / 2, p[2]] for p in points])
+        # points = np.array([[p[0] + w / 2, p[1] + h / 2, p[2]] for p in points])
 
-        dst = cv2.perspectiveTransform(points.reshape(-1, 1, 3), projection)
-
+        dst = cv2.transform(points.reshape(-1, 1, 3), projection)
+        print(dst.shape)
+        #dst = dst @ np.diag([0.1, 0.1, 0.1])
         imgpts = np.int32(dst)
+
+        r = list()
+        for f in imgpts:
+            r.append(list())
+            for s in f:
+                r[-1].append(s[:-1])
+        imgpts = np.array(r)
 
         if color is False:
             cv2.fillConvexPoly(img, imgpts, (137, 27, 211))
@@ -218,15 +226,19 @@ def showimg():
     global h, w, scale, roll, pitch, yaw,scene_name, og_img, K, index, poses
 
     R = degree2R(roll, pitch, yaw)
-    t = np.array([[h, w, -500]]).T
+    t = np.array([[h/1000, w/1000, scale/1000]]).T
     Rt_model = np.hstack([R, t]) 
     Rt_model = np.vstack([Rt_model, [0,0,0,1]])
-    Rt = poses[index] @ Rt_model
-    Rt = approx_rotation(Rt[:-1, :])
+    Rt_cam = poses[index]
+    Rt_cam = np.linalg.pinv(Rt_cam)
+    
+    Rt = Rt_cam @ Rt_model
+    #Rt = approx_rotation(Rt[:-1, :])
+    #Rt = np.linalg.pinv(Rt)
     P = K @ Rt
     P = P[:-1, :]
 
-    img = render(og_img, obj, P, h=1, w=1, color=False, scale = scale)
+    img = render(og_img, obj, P, h=1, w=1, color=False, scale = 1)
     cv2.imshow(scene_name, img)
 
 def frame_track(i):
@@ -349,7 +361,7 @@ if __name__ == '__main__':
     h = 0
     og_w = og_img_height
     w = 0
-    scale = 10
+    scale = -2000
     roll = 0
     pitch = 0
     yaw = 0
