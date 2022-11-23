@@ -9,11 +9,16 @@
 ## Instructions
 
 1. Create a folder named 'vids' next to the driver.py, and put the test videos inside the folder
-2. Run the driver with Docker to use orbslam.
+2. Build Docker images. Run this on first run and if Dockerfile, C++ code or Pipfile changes.
+
+    ```sh
+    DOCKER_BUILDKIT=1 docker compose build
+    ```
+
+3. Run the driver with Docker to use orbslam.
 
     ```sh
     xhost +
-    DOCKER_BUILDKIT=1 docker compose build
 
     # ORBSLAM2 with nvidea gpu
     docker compose run --rm orbslam python3 driver.py -c <config file path inside orbslam_driver directory>
