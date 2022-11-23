@@ -9,6 +9,7 @@ from pathlib import Path
 
 ORB_SLAM_HOME = '/home/ORB_SLAM2'
 TUM_DRIVER = 'Examples/Monocular/mono_tum'
+TUM_DRIVER_LOCALIZATION = 'Examples/Monocular/mono_tum_local'
 VOCABULARY = 'Vocabulary/ORBvoc.txt'
 
 
@@ -53,17 +54,19 @@ def save_data(video, video_name):
             cv2.imwrite(f'{video_folder}/rgb/{data[1]}.png', data[0])
 
 
-def run_orb_slam(video_name, config):
+def run_orb_slam(video_name, config, local):
     print('Running ORB_SLAM')
     video_folder = _get_video_folder(video_name)
-    print(f'{ORB_SLAM_HOME}/{TUM_DRIVER} {ORB_SLAM_HOME}/{VOCABULARY} {config} {video_folder}/')
-    subprocess.run(f'{ORB_SLAM_HOME}/{TUM_DRIVER} {ORB_SLAM_HOME}/{VOCABULARY} {config} {video_folder}/', shell=True)
+    method = TUM_DRIVER_LOCALIZATION if local else TUM_DRIVER
+    print(f'{ORB_SLAM_HOME}/{method} {ORB_SLAM_HOME}/{VOCABULARY} {config} {video_folder}/')
+    subprocess.run(f'{ORB_SLAM_HOME}/{method} {ORB_SLAM_HOME}/{VOCABULARY} {config} {video_folder}/', shell=True)
     shutil.move('./KeyFrameTrajectory.txt', f'{video_folder}/KeyFrameTrajectory.txt')
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', metavar=None, help='The config file to use')
+    parser.add_argument('-l', '--localization', action='store_true', help='Run ORB_SLAM in localization mode')
     args = parser.parse_args()
 
     for root, dirs, files in os.walk('./vids'):
@@ -72,4 +75,4 @@ if __name__ == '__main__':
             video_name = file.split('.')[0]
             save_data(video, video_name)
             if args.config:
-                run_orb_slam(video_name, args.config)
+                run_orb_slam(video_name, args.config, args.localization)

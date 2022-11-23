@@ -7,6 +7,71 @@ from copy import deepcopy
 from object_loader import OBJ
 
 
+def read_kerframe_trajectory(trajectory_fn, timestamp_fn):
+    with open(trajectory_fn, 'r') as fp:  # 'KeyFrameTrajectory.txt'
+      lines = fp.readlines()
+
+    with open(timestamp_fn, 'r') as fp:
+      time_lines = fp.readlines()
+
+    Rt_list = []
+    timestamp_list = []
+    for line in lines:
+      if line.strip():
+        nums = [float(n) for n in line.split(' ')]
+        timestamp = nums[0]
+        t = np.array(nums[1:4]).reshape([3,1])
+        R = quat2mat(nums[4:])
+        Rt = np.hstack([R, t])
+        Rt = np.vstack([Rt, [0,0,0,1]])
+        Rt_list.append(Rt)
+        timestamp_list.append(round(float(timestamp), 2))
+
+
+    has_pose = list()
+    names = list()
+    for line in time_lines:
+      if line.strip() and line[0] != '#':
+        tstamp, imgpth = line.split(' ')
+        names.append(imgpth.split('/')[-1].strip())
+        if round(float(tstamp), 2) in timestamp_list:
+          has_pose.append(True)
+        else:
+          has_pose.append(False)
+
+
+    Rt_list = np.array(Rt_list)
+    has_pose = np.array(has_pose)
+
+    return Rt_list, has_pose, names
+
+def quat2mat(q):
+    ''' Calculate rotation matrix corresponding to quaternion
+    Parameters
+    ----------
+    q : 4 element array-like
+    Returns
+    -------
+    M : (3,3) array
+      Rotation matrix corresponding to input quaternion *q*
+    '''
+    _FLOAT_EPS = np.finfo(float).eps
+    x, y, z, w = q
+    Nq = w*w + x*x + y*y + z*z
+    if Nq < _FLOAT_EPS:
+        return np.eye(3)
+    s = 2.0/Nq
+    X = x*s
+    Y = y*s
+    Z = z*s
+    wX = w*X; wY = w*Y; wZ = w*Z
+    xX = x*X; xY = x*Y; xZ = x*Z
+    yY = y*Y; yZ = y*Z; zZ = z*Z
+    return np.array(
+           [[ 1.0-(yY+zZ), xY-wZ, xZ+wY ],
+            [ xY+wZ, 1.0-(xX+zZ), yZ-wX ],
+            [ xZ-wY, yZ+wX, 1.0-(xX+yY) ]])
+
 def _get_result_file():
     global scene_name
     return f'../orbslam_driver/extracted/{scene_name}/result.json'
@@ -62,17 +127,20 @@ def render(img, obj, projection, h, w, color=False, scale=1):
 
         # render model in the middle of the reference surface. To do so,
         # model points must be displaced
-        points = np.array([[p[0] + w / 2, p[1] + h / 2, p[2]] for p in points])
+        # points = np.array([[p[0] + w / 2, p[1] + h / 2, p[2]] for p in points])
 
-        dst = cv2.perspectiveTransform(points.reshape(-1, 1, 3), projection)
-
+        dst = cv2.transform(points.reshape(-1, 1, 3), projection)
+        print(dst.shape)
+        #dst = dst @ np.diag([0.1, 0.1, 0.1])
         imgpts = np.int32(dst)
+
         r = list()
         for f in imgpts:
             r.append(list())
             for s in f:
                 r[-1].append(s[:-1])
         imgpts = np.array(r)
+
         if color is False:
             cv2.fillConvexPoly(img, imgpts, (137, 27, 211))
         else:
@@ -83,6 +151,25 @@ def render(img, obj, projection, h, w, color=False, scale=1):
 
     return img
 
+def approx_rotation(Rt):
+  """  Get legal rotation matrix """
+  # rotate teapot 90 deg around x-axis so that z-axis is up
+  Rx = np.array([[1,0,0],[0,0,-1],[0,1,0]])
+
+  # set rotation to best approximation
+  R = Rt[:,:3]
+  U,S,V = np.linalg.svd(R)
+  R = np.dot(U,V)
+  R[0,:] = -R[0,:] # change sign of x-axis
+
+  # set translation
+  t = Rt[:,3].reshape(-1)
+
+  # setup 4*4 model view matrix
+  M = np.eye(4)
+  M[:3,:3] = np.dot(R,Rx)
+  M[:3,3] = t
+  return M
 
 def _get_placement(i: int|None = None):
     global index, placements
@@ -136,12 +223,22 @@ def _set_placement_from_current_values(i: int|None = None):
 
 
 def showimg():
-    global h, w, scale, roll, pitch, yaw,scene_name, og_img
+    global h, w, scale, roll, pitch, yaw,scene_name, og_img, K, index, poses
 
     R = degree2R(roll, pitch, yaw)
-    R = np.hstack([R, [[h],[w],[scale]]])
-    R = np.vstack([R, [0,0,0,1]])
-    img = render(og_img, obj, R, h=1, w=1, color=False, scale = scale)
+    t = np.array([[h/1000, w/1000, scale/1000]]).T
+    Rt_model = np.hstack([R, t]) 
+    Rt_model = np.vstack([Rt_model, [0,0,0,1]])
+    Rt_cam = poses[index]
+    Rt_cam = np.linalg.pinv(Rt_cam)
+    
+    Rt = Rt_cam @ Rt_model
+    #Rt = approx_rotation(Rt[:-1, :])
+    #Rt = np.linalg.pinv(Rt)
+    P = K @ Rt
+    P = P[:-1, :]
+
+    img = render(og_img, obj, P, h=1, w=1, color=False, scale = 1)
     cv2.imshow(scene_name, img)
 
 def frame_track(i):
@@ -234,24 +331,37 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-v', '--video', metavar=None, help='The name of the video')
     parser.add_argument('-p', '--previous', action='store_true', help='Use previous object placement file')
+    parser.add_argument('-c', '--config', metavar=None, help='The name of the camera config')
     args = parser.parse_args()
 
     scene_name = args.video
 
     index = 0
     results = list()
-    og_img = getFirstFrame(args.video)
-    keyframes = [og_img] + get_keyframes(args.video)
+    #og_img = getFirstFrame(args.video)
+    keyframes = get_keyframes(args.video)
+    og_img = keyframes[0]
 
     obj = OBJ('lego.obj', swapyz=True)
+
+    if args.config == 'config_mb':
+      im_w, im_h = 1280, 720
+      K =  np.array([ [870.25319293,  0, 637.28771858],
+                      [0, 866.48681104, 354.55971258],
+                      [0,       0,   1]])
+
+    K = np.hstack([K, np.zeros([3,1])])
+    K = np.vstack([K, [0,0,0,1]])
+
+    poses, _, _ = read_kerframe_trajectory(f'../orbslam_driver/extracted/{args.video}/KeyFrameTrajectory.txt', f'../orbslam_driver/extracted/{args.video}/rgb.txt')
 
     og_img_height, og_img_width = og_img.shape[:2]
     # height (h) and width (w) is incorrectly swapped in other places
     og_h = og_img_width
-    h = og_h // 2
+    h = 0
     og_w = og_img_height
-    w = og_w // 2
-    scale = 100
+    w = 0
+    scale = -2000
     roll = 0
     pitch = 0
     yaw = 0
@@ -280,7 +390,7 @@ if __name__ == '__main__':
     cv2.createTrackbar('roll', scene_name, roll, 360, roll_rot_track)
     cv2.createTrackbar('pitch', scene_name, pitch, 360, pitch_rot_track)
     cv2.createTrackbar('yaw', scene_name, yaw, 360, yaw_rot_track)
-    cv2.createButton('Save', save)
+    #cv2.createButton('Save', save)
 
     _get_placement()
 
