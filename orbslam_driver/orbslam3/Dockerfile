@@ -31,7 +31,6 @@ RUN set -x \
         locales \
         lsb-release \
         mesa-utils \
-        subversion \
         wget \
         curl \
         libssl-dev \
@@ -41,29 +40,6 @@ RUN set -x \
         gdb \
         valgrind \
     && rm -rf /var/lib/apt/lists/*
-
-# Install cmake 3.22.1
-COPY --from=git-cmake /src/ /tmp/cmake/
-RUN set -x \
-    && cd /tmp/cmake/ \
-    && ./bootstrap --parallel=8 \
-    && make -j8 \
-    && make install \
-    && cd / \
-    && rm -rf /tmp/cmake/
-
-RUN set -x \
-    && apt-add-repository universe \
-    && apt-get update \
-    && apt-get install --yes \
-        python-pip \
-        python \
-    && rm -rf /var/lib/apt/lists/*
-RUN set -x \
-    && /usr/bin/yes | pip install --upgrade "pip < 21.0" \
-    && /usr/bin/yes | pip install --upgrade virtualenv \
-    && /usr/bin/yes | pip install --upgrade paramiko \
-    && /usr/bin/yes | pip install --ignore-installed --upgrade numpy protobuf
 
 # Locale
 RUN locale-gen en_US.UTF-8
@@ -98,16 +74,13 @@ RUN set -x \
     && apt-get update \
     && apt-get install --yes \
         gnupg2 \
-        curl \
         lsb-core \
-        wget \
         python-pip \
         libpng16-16 \
         libjpeg-turbo8 \
         libtiff5 \
         # Base tools
         # cmake \
-        git \
         unzip \
         pkg-config \
         python-dev \
@@ -119,8 +92,7 @@ RUN set -x \
         libpython2.7-dev \
         libeigen3-dev \
         apt-transport-https \
-        ca-certificates\
-        software-properties-common \
+        ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Build Pangolin
