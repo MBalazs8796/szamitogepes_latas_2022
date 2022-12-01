@@ -13,6 +13,9 @@ import numpy as np
 import tqdm
 
 
+Trajectory = tuple[float, float, float, float, float, float, float]
+FRAME_INTERVAL = 0.05
+
 @dataclass(frozen=True, order=True)
 class KeyFrameTrajectoryFileInfo:
     """frame times are stored as negative values to achieve simple larger is better comparison"""
@@ -48,6 +51,65 @@ class KeyFrameTrajectoryFileInfo:
                     frame_times.append(frame_time)
 
         return KeyFrameTrajectoryFileInfo(frame_times=frame_times)
+
+
+@dataclass(frozen=True)
+class KeyFrameTrajectoryLine:
+    frametime: float
+    trajectory: Trajectory
+
+    @staticmethod
+    def from_line(line: str, is_keyframe_trajectory: bool):
+        line_parts = line.split(' ')
+        if len(line_parts) != 8:
+            raise ValueError('Invalid line')
+        frametime = float(line_parts[0])
+        if not is_keyframe_trajectory:
+            frametime = frametime / float(10**9)
+        return KeyFrameTrajectoryLine(
+            frametime=frametime,
+            trajectory=tuple(map(lambda p: np.around(float(p), decimals=7), line_parts[1:]))
+        )
+
+
+@dataclass(frozen=True)
+class KeyFrameTrajectory:
+    lines: list[KeyFrameTrajectoryLine]
+
+    def to_file_content(self) -> str:
+        result = ''
+        for line in self.lines:
+            result += format(line.frametime, '.6f')
+            result += ' '
+            result += ' '.join(map(lambda v: format(v, '.7f'), line.trajectory))
+            result += '\n'
+        return result
+
+    @staticmethod
+    def from_file(keyframe_file: str, trajectory_file: str|None = None):
+        lines: list[KeyFrameTrajectoryLine] = []
+        keyframe_file_lines: list[str] = []
+        with open(keyframe_file,"r") as f:
+            keyframe_file_lines = f.readlines()
+        if len(keyframe_file_lines) < 2:
+            return KeyFrameTrajectory(lines=[])
+        if trajectory_file is None:
+            lines = list(map(lambda line: KeyFrameTrajectoryLine.from_line(line, True), keyframe_file_lines))
+        else:
+            original_first_line = KeyFrameTrajectoryLine.from_line(keyframe_file_lines[0], True)
+            with open(trajectory_file,"r") as f:
+                for i, line in enumerate(f.readlines()):
+                    processed_line = KeyFrameTrajectoryLine.from_line(line, False)
+                    if i == 0:
+                        lines.append(
+                            KeyFrameTrajectoryLine(
+                                frametime=processed_line.frametime-FRAME_INTERVAL,
+                                trajectory=original_first_line.trajectory
+                            )
+                        )
+                    lines.append(processed_line)
+
+        return KeyFrameTrajectory(lines=lines)
 
 
 class OrbSlamRunner:
@@ -89,6 +151,18 @@ class OrbSlamRunner:
             print('WARN: No Trajectory.txt file found')
         return file_info
 
+    def _save_best(self, file_info: KeyFrameTrajectoryFileInfo):
+        keyframe_file = f'{self.keyframe_trajectories_dir}/{file_info.get_keyframe_filename()}'
+        trajectory_file = f'{self.keyframe_trajectories_dir}/{file_info.get_trajectory_filename()}'
+        if not os.access(trajectory_file, os.R_OK):
+            trajectory_file = None
+        keyframe_trajectory = KeyFrameTrajectory.from_file(keyframe_file, trajectory_file)
+
+        print(f'Saving best result for {self.video_name}')
+        print(file_info)
+        with open(f'{self.video_folder}/KeyFrameTrajectory.txt', 'w') as f:
+            f.write(keyframe_trajectory.to_file_content())
+
     def run(self):
         """
         Runs ORBSLAM multiple times until we get a specified amount of duplicate results
@@ -117,8 +191,7 @@ class OrbSlamRunner:
             print(f'Run count: {counter}/{self.repeat}')
 
         best_result_file_info = max(keyframe_trajectory_files)
-        shutil.copy(f'{self.keyframe_trajectories_dir}/{best_result_file_info.get_keyframe_filename()}', f'{self.video_folder}/KeyFrameTrajectory.txt')
-        shutil.copy(f'{self.keyframe_trajectories_dir}/{file_info.get_trajectory_filename()}', f'{self.video_folder}/Trajectory.txt')
+        self._save_best(best_result_file_info)
 
 
 def _get_video_folder(video_name):
@@ -141,7 +214,7 @@ def extract_frames(video):
             break
 
         extracted.append((frame, round(i, 2)))
-        i += 0.05
+        i += FRAME_INTERVAL
 
     return extracted
 
@@ -173,7 +246,7 @@ if __name__ == '__main__':
         for file in files:
             video = os.path.join(root, file)
             video_name = file.split('.')[0]
-            # save_data(video, video_name)
+            save_data(video, video_name)
             if args.config:
                 runner = OrbSlamRunner(
                     video_name,
