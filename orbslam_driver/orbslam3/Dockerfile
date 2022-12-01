@@ -166,5 +166,14 @@ RUN set -x \
     && ln -s /ORB_SLAM3 /home/ORB_SLAM2 \
     && chmod 755 /entrypoint.sh
 
+# Modify source code and rebuild ORB_SLAM3
+RUN set -x \
+    && cd /ORB_SLAM3 \
+    # Disable viewer
+    && sed -i 's/System::MONOCULAR,true/System::MONOCULAR,false/g' './Examples/Monocular/mono_tum.cc' \
+    # Enable saving Trajectory.txt
+    && sed -i 's/return 0;/SLAM.SaveTrajectoryEuRoC("Trajectory.txt");\nreturn 0;/g' './Examples/Monocular/mono_tum.cc' \
+    && ./build.sh
+
 WORKDIR /data
 ENTRYPOINT ["/entrypoint.sh"]

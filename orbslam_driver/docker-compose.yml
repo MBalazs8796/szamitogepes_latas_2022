@@ -6,7 +6,6 @@ x-orbslam: &orbslam
     context: ../
   volumes:
     - .:/data
-    - /tmp/.X11-unix:/tmp/.X11-unix
 
 services:
   orbslam:
@@ -19,7 +18,6 @@ services:
             count: all
             capabilities: [gpu]
     environment:
-      DISPLAY: unix${DISPLAY}
       NVIDIA_DRIVER_CAPABILITIES: all
     ipc: host
     privileged: true
@@ -27,14 +25,9 @@ services:
 
   orbslam-nogpu:
     <<: *orbslam
-    environment:
-      DISPLAY: unix${DISPLAY}
 
   orbslam3:
     <<: *orbslam
     build:
       dockerfile: orbslam_driver/orbslam3/Dockerfile
       context: ../
-    environment:
-      DISPLAY: unix${DISPLAY}
-      QT_X11_NO_MITSHM: 1

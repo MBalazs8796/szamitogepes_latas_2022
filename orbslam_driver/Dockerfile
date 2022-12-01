@@ -26,9 +26,12 @@ Examples/Monocular/mono_tum_local.cc)
 target_link_libraries(mono_tum_local \${PROJECT_NAME})
 EOF
 
+# Modify source code and rebuild ORB_SLAM2
 RUN set -x \
     && cd /home/ORB_SLAM2 \
     && cat /tmp/CMakeLists.txt.extend >> CMakeLists.txt \
+    # Disable viewer
+    && sed -i 's/System::MONOCULAR,true/System::MONOCULAR,false/g' './Examples/Monocular/mono_tum.cc' \
     && chmod +x build.sh \
     && ./build.sh
 

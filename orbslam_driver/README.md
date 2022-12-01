@@ -2,7 +2,6 @@
 
 ## Requiremets
 
-- Linux
 - Docker
 - Docker Compose (v2)
 
@@ -18,14 +17,12 @@
 3. Run the driver with Docker to use orbslam.
 
     ```sh
-    xhost +
-
+    # ORBSLAM3
+    docker compose run --rm orbslam3 python3 driver.py -c <config file path inside orbslam_driver directory>
     # ORBSLAM2 with nvidea gpu
     docker compose run --rm orbslam python3 driver.py -c <config file path inside orbslam_driver directory>
     # ORBSLAM2 without using a gpu
     docker compose run --rm orbslam-nogpu python3 driver.py -c <config file path inside orbslam_driver directory>
-    # ORBSLAM3
-    docker compose run --rm orbslam3 python3 driver.py -c <config file path inside orbslam_driver directory>
     ```
 
 ### ORBSLAM3
