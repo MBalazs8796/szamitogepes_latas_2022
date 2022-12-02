@@ -129,6 +129,7 @@ dmypy.json
 .pyre/
 
 orbslam_driver/extracted/*/keyframe_trajectories/
+orbslam_driver/extracted/*/rgb.txt
 orbslam_driver/vids
 checker/vids
 checker/results/
