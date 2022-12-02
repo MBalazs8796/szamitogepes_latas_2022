@@ -1,9 +1,0 @@
-xhost +
-sudo docker run -v /home/hex/Repos/szamitogepes_latas_2022/orbslam_driver:/home/driver --gpus all -it --ipc=host --net=host --privileged -e DISPLAY=unix$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw -e NVIDIA_DRIVER_CAPABILITIES=all celinachild/orbslam2:latest /bin/bash
-sudo apt update &&
-sudo apt install python3-pip &&
-pip3 install ez_setup &&
-pip3 install --upgrade pip &&
-pip install opencv-python &&
-pip install tqdm &&
-cd /home/driver

@@ -1,0 +1,33 @@
+version: "3.8"
+
+x-orbslam: &orbslam
+  build:
+    dockerfile: orbslam_driver/Dockerfile
+    context: ../
+  volumes:
+    - .:/data
+
+services:
+  orbslam:
+    <<: *orbslam
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            count: all
+            capabilities: [gpu]
+    environment:
+      NVIDIA_DRIVER_CAPABILITIES: all
+    ipc: host
+    privileged: true
+    network_mode: host
+
+  orbslam-nogpu:
+    <<: *orbslam
+
+  orbslam3:
+    <<: *orbslam
+    build:
+      dockerfile: orbslam_driver/orbslam3/Dockerfile
+      context: ../
