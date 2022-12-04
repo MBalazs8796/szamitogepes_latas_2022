@@ -89,8 +89,14 @@ Mivel a projekt élettartamának jelentős részében a kiadott keyframekre hagy
 Ezek kiszámítását egyszerűen úgy végeztük el, hogy számos alkalommal újrafuttattuk az ORB-SLAM2-t ugyan azokkal a bemeneti paraméterekkel, hogy kiválaszthassuk ezek közül azokat, amelyekben a legtöbb keyframe maradt a végső halmazban.
 A pontosság mélyreható tesztelését nem végeztük el, hiszen hamarosan áttértünk a frame szinten működő algoritmusra, amely mindezt redundánssá tette.
 
-\subsection{ORB-SLAM3}
+\subsection{ORB-SLAM3 és egyéb javítások}
+
+Ahogyan már a korábbi bekezdésekben is említettük, az előző mérföldkő során felfedezett hibákra az ORB-SLAM újabb verziójára váltás adott megoldást.
+Az ORB-SLAM3-ban továbbfejlesztették a követési algoritmust, így bár alapvető működése ugyanaz, mint a 2-nek, mégis sokkal pontosabb eredményeket lehet vele elérni.
+Egy másik nagy különbség az előző verziójához képest az, hogy míg a 2-ben csak mélységi, vagy sztereó kamerák esetében volt lehetőség az összes frame-ről lekérni a kamera helyzetét, addig itt ezt a megszorítást megszüntették.
 
 
 \section{Eredmények}
+
+
 
