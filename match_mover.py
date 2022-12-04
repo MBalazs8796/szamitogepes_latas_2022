@@ -310,6 +310,12 @@ if __name__ == '__main__':
       K =  np.array([ [870.25319293,  0, 637.28771858],
                       [0, 866.48681104, 354.55971258],
                       [0,       0,   1]])
+    elif camera_config_name == 'config_tumvi':
+      im_w, im_h = 512, 512
+      fps = 20
+      K =  np.array([ [190.978477,  0, 254.931706],
+                      [0, 190.973307, 256.897442],
+                      [0,       0,   1]])
     else:
       raise ValueError(f'Camera config with name {camera_config_name} not exists')
 
