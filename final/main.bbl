@@ -1,0 +1,16 @@
+\begin{thebibliography}{1}
+\providecommand{\url}[1]{\texttt{#1}}
+\providecommand{\urlprefix}{URL }
+\providecommand{\doi}[1]{https://doi.org/#1}
+
+\bibitem{klenk2021tum}
+Klenk, S., Chui, J., Demmel, N., Cremers, D.: Tum-vie: The tum stereo
+  visual-inertial event dataset. In: 2021 IEEE/RSJ International Conference on
+  Intelligent Robots and Systems (IROS). pp. 8601--8608. IEEE (2021)
+
+\bibitem{mur2015orb}
+Mur-Artal, R., Montiel, J.M.M., Tardos, J.D.: Orb-slam: a versatile and
+  accurate monocular slam system. IEEE transactions on robotics
+  \textbf{31}(5),  1147--1163 (2015)
+
+\end{thebibliography}
