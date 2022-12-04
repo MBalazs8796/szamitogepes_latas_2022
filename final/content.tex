@@ -98,5 +98,40 @@ Egy másik nagy különbség az előző verziójához képest az, hogy míg a 2-
 
 \section{Eredmények}
 
+A végeredményünk, habár a legtöbb esetben nem produkál hibátlan követést, gyakran viszonylag közel marad az "elvárt" pozíciójához.
+Gyakran egy jól definiált területen belül marad, ami természetesen az emberi szem számára továbbra is helytelen követésnek minősül, azonban jelentős javulás a korábbi eredményeinkhez képest.
+Fontos megjegyezni, hogy a geometria a képen meghatározott pozíciója fontos szerepet játszik abban, hogy mennyire ítéljük meg helyesnek a követést.
+Abban az esetben, ha van egy tiszta, számunkra egyértelmű referenciánk arról, hogy hol kellene elhelyezkednie az objektumnak, a hiba mértéke sokkal nagyobbnak tűnik, és lényegesen egyszerűbb kiszúrni, a viszonylag kicsi pontatlanságokat is.
+
+\subsection{Javulás}
+
+Az új megközelítés kidolgozása sokkal jelentősebb időt vett igénybe, illetve sokkal számításigényesebb, mint arra eredetileg számítottunk, így a végeredmények száma limitált.
+Ettől függetlenül állíthatjuk, hogy a követés látványosan pontosabb, ha kevés a megfigyelő számára könnyen követhető referencia pont található a környezetében, akkor akár a teljes videó során helyesnek nevezhető eredményt produkál.
+
+Olyan környezetekben, amikor könnyedén meghatározható a helyes pozíció láthatóvá válik, hogy az abszolút pontosság, azaz, amikor ténylegesen helyesen számítja ki a geometria pozícióját meglehetősen alacsony.
+
+\subsection{Új videók}
+
+A teszthalmazunkat bővítettük olyan videókkal, amik potenciálisan könnyebbe lehetnek az ORB-SLAM számára, ezáltal nagyobb pontosságú követést elérve.
+A videók sokkal kaotikusabb környezetben készültek, és gyakran gép által mozgatot kamerával vannak felvéve, ami az ORB-SLAM eredeti használati esetéhez jóval közelebb esnek.
+A követés pontossága ezekben az esetekben is eltérő.
+
+Stabil közeledés esetén például helyesen meghatározza, hogy az objektumnak nem kell forognia, sem mozognia, azonban a skálázást helytelenül végzi.
+Ez akkor is igaz, ha minimál mozgást kell végeznie.
+Helyesen követi a kisebb elmozdulásokat is.
 
 
+\section{További javítási javaslatok}
+
+Az ORB-SLAM alapú megközelítésünk legnagyobb gyengéje, hogy helytelenül kezeli az objektum mélységét, illetve, hogy bizonyos, nehezen izolálható helyzetekben nem megfelelő erősségű az eltolás mennyisége.
+Az utóbbi nehezen orvosolható, hiszen könnyen lehet, hogy az ORB-SLAM az általunk meghatározott környezetben nem képes pontosabban meghatározni a kamera pozícióját.
+Itt kiemeljük, hogy az eszköz eredetileg nem erre a célra készült, ahol feltehetően ez a szintű pontatlanság elhanyagolható.
+
+A mélységi információ kezelésén azonban jelentősen javíthatnánk, ha különválasztanánk a többi mozgástól, ugyanis előfordulnak esetek, amikor az utóbbi szinte tökéletesen meghatározott, míg az előbbi nem.
+
+További lehetőség lenne, hogy az objektum elhelyezéséhez nem pusztán a kamera pozícióját használnánk, hanem virtuális valóságbeli megoldások nyomán megalkotnánk egy háromdimenziós teret, a kamera látványa alapján, amibe elhelyeznénk a megjeleníteni kívánt objektumot.
+Ezek után a virtuális térben létrehozhatnánk egy kamerát, amelynek a saját terében felvett kezdőpozíciója egybeesne a valós kameránk relatív pozíciójával a valós környezethez képest.
+Ezek után a virtuális kamerára alkalmazhatnánk az ORB-SLAM által meghatározott transzformációkat, amik során nem lépne fel az invertálás numerikus instabilitásából eredő kerekítési hiba.
+A virtuális kamera látványából csak a megjelníteni kívánt geometriát helyeznénk el az eredeti képkockákon, így a végeredmény azonos lenne.
+
+Az így készített match move stabilabb, megbízhatóbb lenne, és néhány megkötést is szükségtelenné válna.
